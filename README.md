@@ -78,7 +78,10 @@ Requires `pandas` package installed.
 
 Shows how to read data and plot data from hdr/bin file pairs.
 
+![](docs/matplotlib_sample_plot.png)
+
 Requires `matplotlib` package installed.
+
 
 
 ### [`csv_sample.py`](csv_sample.py)

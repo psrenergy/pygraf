@@ -23,62 +23,78 @@ if __name__ == "__main__":
     """
 
     print("Example using open(...), close()")
-    filename1 = "data/gerter.hdr"
-    sddp = psr.graf.SddpBinaryReader()
-    sddp.open(filename1, hdr_info=True)
+    filename1 = "sample_data/gerter.hdr"
+    graf_file = psr.graf.BinReader()
+    graf_file.open(filename1, hdr_info=True)
 
-    print("Stages:", sddp.stages)
-    print("Agents:", sddp.agents)
+    print("Stages:", graf_file.stages)
+    print("Agents:", graf_file.agents)
 
     # 1-base indexing
     stage = 1
     scenario = 1
     block = 1
-    print("Specific values (per agent):", sddp.read(stage, scenario, block))
-    sddp.close()
+    print("Specific values (per agent):", graf_file.read(stage, scenario, block))
+    graf_file.close()
 
-    print()
-    print("Example plot by scenario, context managed")
-    with psr.graf.open_bin("other/dclink.hdr", hdr_info=False) as sddp:
-        print("Stages:",    sddp.stages)
-        print("Scenarios:", sddp.scenarios)
-        print("Agents:",    sddp.agents)
+    # Hourly demand data plot example
+    with psr.graf.open_bin("sample_data/demand.hdr", hdr_info=False) as graf_file:
+        print("Stages:", graf_file.stages)
+        print("Scenarios:", graf_file.scenarios)
+        print("Agents:", graf_file.agents)
+        stage = 1
+        # Number of hours vary by stage on monthly studies.
+        hours = list(range(1, graf_file.blocks(stage) + 1))
+        scenario = 1
 
-        stg = 1
-        scn = 2
-        data = sddp.read_blocks(stg, scn)
-        blocks = range(1, len(data[0]) + 1)
+        hour_data_per_agent = []
+        for hour in hours:
+            data = graf_file.read(stage, scenario, hour)
+            hour_data_per_agent.append(data)
+        # Transpose stage_data_per_agent
+        agent_data_per_hour = list(map(list, zip(*hour_data_per_agent)))
+
         plt.figure()
-        plt.title("{}, stage {}, scenario {}".format(sddp.name, stg, scn))
+        plt.title("hourly {}, stage {}, scenario {}".format(graf_file.name, stage, scenario))
         legend_entries = []
-        for iagent, agent_block_values in enumerate(data):
-            agent = sddp.agents[iagent]
+        for iagent, agent_hour_values in enumerate(agent_data_per_hour):
+            agent = graf_file.agents[iagent]
             legend_entries.append(agent)
-            plt.plot(blocks, agent_block_values)
+            plt.plot(hours, agent_hour_values)
 
         plt.legend(legend_entries)
-        plt.ylabel(sddp.units)
-        plt.xticks(range(1, len(blocks) + 1, 1))
-        plt.xlabel("Block")
+        plt.grid(True)
+        plt.ylabel(graf_file.units)
+        plt.xlabel("Hours")
 
-    with psr.graf.open_bin("other/flw_pdik.hdr", hdr_info=False) as sddp:
-        print("Stages:", sddp.stages)
-        print("Scenarios:", sddp.scenarios)
-        print("Agents:", sddp.agents)
-        stg = 1
-        scn = 2
-        data = sddp.read_blocks(stg, scn)
-        blocks = range(1, len(data[0]) + 1)
+    with psr.graf.open_bin("sample_data/gerter.hdr", hdr_info=False) as graf_file:
+        print("Stages:", graf_file.stages)
+        print("Scenarios:", graf_file.scenarios)
+        print("Agents:", graf_file.agents)
+        stage_start = 1
+        stage_end = graf_file.stages
+        stages = list(range(stage_start, stage_end))
+        scenario = 1
+        block = 1
+
+        stage_data_per_agent = []
+        for stage in stages:
+            data = graf_file.read(stage, scenario, block)
+            stage_data_per_agent.append(data)
+        # Transpose stage_data_per_agent
+        agent_data_per_stage = list(map(list, zip(*stage_data_per_agent)))
+
         plt.figure()
-        plt.title("{}, stage {}, scenario {}".format(sddp.name, stg, scn))
+        plt.title("{}, scenario {}, block {}".format(graf_file.name, scenario, block))
         legend_entries = []
-        for iagent, agent_block_values in enumerate(data):
-            agent = sddp.agents[iagent]
+        for iagent, agent_stage_values in enumerate(agent_data_per_stage):
+            agent = graf_file.agents[iagent]
             legend_entries.append(agent)
-            plt.plot(blocks, agent_block_values)
+            plt.plot(stages, agent_stage_values)
 
         plt.legend(legend_entries)
-        plt.ylabel(sddp.units)
-        plt.xlabel("Block")
-        plt.xticks(range(1, len(blocks) + 1, 1))
+        plt.grid(True)
+        plt.ylabel(graf_file.units)
+        plt.xlabel("Stage")
+        plt.xticks(stages)
         plt.show()

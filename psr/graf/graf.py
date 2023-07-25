@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import os
 import struct
 import sys
+from typing import Union
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
@@ -11,7 +12,17 @@ _WORD = 4
 _IS_PY2 = sys.version_info.major == 3
 
 
-class SddpBinaryReader:
+# Check whether pandas' dataframe is available.
+_HAS_PANDAS = False
+try:
+    import pandas as pd
+    _HAS_PANDAS = True
+except ImportError:
+    pd = None
+    _HAS_PANDAS = False
+
+
+class BinReader:
     """
     SDDP binary data reader class.
     """
@@ -201,9 +212,9 @@ class SddpBinaryReader:
     def __seek(self, i_stage, i_scenario, i_block):
         # type: (int, int, int) -> None
         # i_scenario, i_block are 1-based indexes; i_stage is 0-based.
-        index = self.bin_offsets[i_stage] * self.scenarios \
+        index = (self.bin_offsets[i_stage] * self.scenarios \
                 + self.blocks(i_stage + 1) * (i_scenario - 1) \
-                + (i_block - 1)
+                + (i_block - 1)) * len(self.agents)
 
         offset_from_start = index * _WORD
         seek_from_start = 0
@@ -234,8 +245,8 @@ class SddpBinaryReader:
     def read_blocks(self, stage, scenario):
         # type: (int, int) -> list
         """
-        Read data of a given stage and scenario. Returns a list containing lists
-        with block data, for each agent.
+        Read data of a given stage and scenario. Returns a list
+        containing lists with block data, for each agent.
 
         Raises IndexError if stage or scenario is out of bounds.
         
@@ -273,7 +284,29 @@ def open_bin(file_path, **kwargs):
     Keyword arguments:
         hdr_info -- Print files metadata to stdout (Default = False).
     """
-    obj = SddpBinaryReader()
+    obj = BinReader()
     obj.open(file_path, **kwargs)
     yield obj
     obj.close()
+
+
+def load_as_dataframe(file_path):
+    # type: (str) -> Union[pd.DataFrame, None]
+    if _HAS_PANDAS:
+        with open_bin(file_path, hdr_info=False) as graf_file:
+            total_agents = len(graf_file.agents)
+            row_values = [0.0] * (total_agents + 3)
+            data = []
+            for stage in range(1, graf_file.stages + 1):
+                row_values[0] = stage
+                total_blocks = graf_file.blocks(stage)
+                for scenario in range(1, graf_file.scenarios + 1):
+                    row_values[1] = scenario
+                    for block in range(1, total_blocks + 1):
+                        row_values[2] = block
+                        row_values[3:] = graf_file.read(stage, scenario, block)
+                        data.append(row_values[:])
+            return pd.DataFrame(data, columns=['stage', 'scenario', 'block']
+                                              + graf_file.agents)
+    else:
+        return None

@@ -20,31 +20,32 @@ def chunkfy(data, chunk_size):
               (i + 1) * (n // k) + min(i + 1, n % k)] for i in range(k)]
 
 
-def sddp_to_parquet(sddp_file_path, parquet_file_path):
+def graf_to_parquet(graf_file_path, parquet_file_path):
     # type: (str, str) -> None
-    with psr.graf.open_bin(sddp_file_path, hdr_info=False) as sddp:
+    with psr.graf.open_bin(graf_file_path, hdr_info=False) as graf_file:
         # The code below specifies the table layout.
         fields = [
             pa.field('stage', pa.int64()),
             pa.field('scenario', pa.int64()),
             pa.field('block', pa.int64())
         ]
-        fields.extend([pa.field(agent, pa.float32()) for agent in sddp.agents])
+        fields.extend([pa.field(agent, pa.float32())
+                       for agent in graf_file.agents])
 
         first_chunk = True
         parquet_writer = None
         for i_chunk, stage_chunk in enumerate(
-                chunkfy(list(range(1, sddp.stages + 1)), _stage_chunk_size)):
+                chunkfy(list(range(1, graf_file.stages + 1)), _stage_chunk_size)):
             stages = []  # Stage number column.
             scenarios = []  # Scenario number column.
             blocks = []  # Blocks number column.
             agents = []  # Stores all agents columns data.
-            for _ in sddp.agents:
+            for _ in graf_file.agents:
                 agents.append([])
 
             for stage in stage_chunk:
-                for scenario in range(1, sddp.scenarios + 1):
-                    data = sddp.read_blocks(sddp.stages, sddp.scenarios)
+                for scenario in range(1, graf_file.scenarios + 1):
+                    data = graf_file.read_blocks(stage, scenario)
                     total_blocks = len(data[0])
                     current_blocks = list(range(1, total_blocks + 1))
 
@@ -85,11 +86,9 @@ def parquet_to_csv(parquet_file_path, csv_file_path):
 
 
 if __name__ == "__main__":
-    sddp_file = r"""other/dclink.hdr"""
-    parquet_file = r"""dclink.parquet"""
-    sddp_to_parquet(sddp_file, parquet_file)
+    sddp_file = r"""sample_data/demand.hdr"""
+    parquet_file = r"""demand.parquet"""
+    graf_to_parquet(sddp_file, parquet_file)
 
-    # Convert parquet to CSV for verification.
-    # This might take a while for big hdr/bin files.
-    parquet_to_csv(parquet_file, "sample.csv")
+    parquet_to_csv(parquet_file, "demand.csv")
 

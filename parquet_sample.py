@@ -2,6 +2,9 @@
 from __future__ import print_function
 import psr.graf
 
+import argparse
+import os
+
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -86,9 +89,31 @@ def parquet_to_csv(parquet_file_path, csv_file_path):
 
 
 if __name__ == "__main__":
-    sddp_file = r"""sample_data/demand.hdr"""
-    parquet_file = r"""demand.parquet"""
-    graf_to_parquet(sddp_file, parquet_file)
+    # Read file name from command line arguments
+    # - or use sample data if not provided.
+    parser = argparse.ArgumentParser(
+        description='Converts a Sddp result binary file to Apache Parquet '
+                    'file format.')
+    parser.add_argument('sddp_file', type=str, nargs='?',
+                        help='Sddp result binary file', default=None)
+    parser.add_argument('parquet_file', type=str, nargs='?',
+                        help='Output Parquet file', default=None)
+    args = parser.parse_args()
 
-    parquet_to_csv(parquet_file, "demand.csv")
+    if args.sddp_file is None:
+        sddp_file = r"""sample_data/demand.hdr"""
+        sample_data = True
+    else:
+        sddp_file = args.sddp_file
+        sample_data = False
 
+    parquet_file = args.parquet_file if args.parquet_file is not None \
+        else os.path.splitext(sddp_file)[0] + ".parquet"
+
+    if os.path.exists(sddp_file):
+        graf_to_parquet(sddp_file, parquet_file)
+    else:
+        if not sample_data:
+            raise Exception("File not found: {}".format(sddp_file))
+        else:
+            raise Exception("Sample data file not found: {}".format(sddp_file))

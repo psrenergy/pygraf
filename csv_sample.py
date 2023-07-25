@@ -2,7 +2,9 @@
 from __future__ import print_function
 import psr.graf
 
+import argparse
 import csv
+import os
 
 
 def graf_to_csv(graf_file_path, csv_file_path, **csv_kwargs):
@@ -27,7 +29,31 @@ def graf_to_csv(graf_file_path, csv_file_path, **csv_kwargs):
 
 
 if __name__ == "__main__":
-    sddp_file = r"""sample_data/gerter.hdr"""
-    csv_file = r"""gerter.csv"""
+    # Read file name from command line arguments
+    # - or use sample data if not provided.
+    parser = argparse.ArgumentParser(
+        description='Converts a Sddp result binary file to Comma '
+                    'Delimited Values (CSV) file.')
+    parser.add_argument('sddp_file', type=str, nargs='?',
+                        help='Sddp result binary file', default=None)
+    parser.add_argument('csv_file', type=str, nargs='?',
+                        help='Output CSV file', default=None)
+    args = parser.parse_args()
 
-    graf_to_csv(sddp_file, csv_file, delimiter=',', quotechar='"')
+    if args.sddp_file is None:
+        sddp_file = r"""sample_data/gerter.hdr"""
+        sample_data = True
+    else:
+        sddp_file = args.sddp_file
+        sample_data = False
+
+    csv_file = args.csv_file if args.csv_file is not None \
+        else os.path.splitext(sddp_file)[0] + ".csv"
+
+    if os.path.exists(sddp_file):
+        graf_to_csv(sddp_file, csv_file, delimiter=',', quotechar='"')
+    else:
+        if not sample_data:
+            raise Exception("File not found: {}".format(sddp_file))
+        else:
+            raise Exception("Sample data file not found: {}".format(sddp_file))

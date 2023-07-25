@@ -52,25 +52,36 @@ with psr.graf.open_bin("sample_data/gerter.hdr") as graf_file:
           .format(stage, scenario, block), graf_file.read(1, 1, 1))
 ```
 
+The output is:
+```
+Stages: 12
+Scenarios: 50
+Agents: ['Thermal 1', 'Thermal 2', 'Thermal 3']
+Initial date: 2013/01
+Units: GWh
+Number of blocks at stage 2: 1
+Data at stage 2, scenario 10, block 1: (7.440000057220459, 0.7440000176429749, 0.3680693209171295)
+```
+
 
 Usage Samples
 -------------
 
-### `dataframes_sample.py`
+### [`dataframes_sample.py`](dataframes_sample.py)
 
 Shows how to read data into `pandas.DataFrame`s.
 
 Requires `pandas` package installed.
 
 
-### `matplotlib_sample.py`
+### [`matplotlib_sample.py`](matplotlib_sample.py)
 
 Shows how to read data and plot data from hdr/bin file pairs.
 
 Requires `matplotlib` package installed.
 
 
-### `csv_sample.py`
+### [`csv_sample.py`](csv_sample.py)
 
 Shows how to convert from hdr/bin file pairs to csv using `psr.graf` module.
 
@@ -83,7 +94,7 @@ python csv_sample.py input_file.hdr output_file.csv
 Where `output_file.csv` is optional.
 
 
-### `parquet_sample.py`
+### [`parquet_sample.py`](parquet_sample.py)
 
 Shows how to convert from hdr/bin file pairs to Apache Parquet format.
 

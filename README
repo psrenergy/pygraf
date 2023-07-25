@@ -1,0 +1,20 @@
+# PyGraf
+
+
+Instantiate a `SddpBinaryReader` object or use the context managed function
+`open_bin` to read .hdr/bin file pairs.
+
+## Usage
+
+- class `SddpBinaryReader.open(file_path, kwargs)`
+- `open_bin(file_path, kwargs)`
+file_path can be a path without extension (hdr and bin have common base names),
+with .hdr or .bin extensions.
+
+`kwargs`:
+ - hdr_info: boolean, prints HDR description
+
+Data can be read using `class SddpBinaryReader.read(stage, scenario, block)`
+or class `SddpBinaryReader.read_blocks(stage, scenario)`.
+`stage`, `scenario`, and `block` are 1-based indexes. Their range can be
+retrieved by `.stages`, `.scenarios`, and `.blocks(scenario)` respectively.

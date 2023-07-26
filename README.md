@@ -79,24 +79,24 @@ Data at stage 2, scenario 10, block 1: (7.440000057220459, 0.7440000176429749, 0
 Usage Samples
 -------------
 
-### [`dataframes_sample.py`](dataframes_sample.py)
+### [`dataframes_sample.py`](https://github.com/psrenergy/pygraf/blob/main/dataframes_sample.py)
 
 Shows how to read data into `pandas.DataFrame`s.
 
 Requires `pandas` package installed.
 
 
-### [`matplotlib_sample.py`](matplotlib_sample.py)
+### [`matplotlib_sample.py`](https://github.com/psrenergy/pygraf/blob/main/matplotlib_sample.py)
 
 Shows how to read data and plot data from hdr/bin file pairs.
 
-![](docs/matplotlib_sample_plot.png)
+![](https://github.com/psrenergy/pygraf/blob/main/docs/matplotlib_sample_plot.png)
 
 Requires `matplotlib` package installed.
 
 
 
-### [`csv_sample.py`](csv_sample.py)
+### [`csv_sample.py`](https://github.com/psrenergy/pygraf/blob/main/csv_sample.py)
 
 Shows how to convert from hdr/bin file pairs to csv using `psr.graf` module.
 
@@ -109,7 +109,7 @@ python csv_sample.py input_file.hdr output_file.csv
 Where `output_file.csv` is optional.
 
 
-### [`parquet_sample.py`](parquet_sample.py)
+### [`parquet_sample.py`](https://github.com/psrenergy/pygraf/blob/main/parquet_sample.py)
 
 Shows how to convert from hdr/bin file pairs to Apache Parquet format.
 
@@ -122,3 +122,10 @@ python parquet_sample.py input_file.hdr output_file.parquet
 ```
 
 Where `output_file.parquet` is optional.
+
+
+Issues and Support
+------------------
+
+Check PyGraf's [GitHub repository](https://github.com/psrenergy/pygraf/) and [issues page](https://github.com/psrenergy/pygraf/issues) for support.
+

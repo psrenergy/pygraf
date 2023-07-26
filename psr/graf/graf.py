@@ -10,7 +10,7 @@ if not _IS_PY2:
     from typing import Union
 
 
-_VERSION = "1.0.0"
+_VERSION = "1.0.1"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4

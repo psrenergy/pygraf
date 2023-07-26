@@ -5,6 +5,18 @@ PyGraf
 Utility module to read Sddp hdr/bin result file pairs. Some examples to convert it to popular formats are available.
 
 
+Installing
+----------
+
+Install the latest version from [PyPI](https://pypi.org/)
+
+```
+pip install psr-graf
+```
+
+Or download this repository contents.
+
+
 Usage
 -----
 

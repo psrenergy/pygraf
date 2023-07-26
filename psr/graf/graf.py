@@ -4,12 +4,14 @@ from contextlib import contextmanager
 import os
 import struct
 import sys
-from typing import Union
+
+_IS_PY2 = sys.version_info.major == 2
+
+if not _IS_PY2:
+    from typing import Union
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
-
-_IS_PY2 = sys.version_info.major == 3
 
 
 # Check whether pandas' dataframe is available.

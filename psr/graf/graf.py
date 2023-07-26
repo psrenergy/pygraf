@@ -1,4 +1,3 @@
-#!/usr/bin/python
 from __future__ import print_function
 from contextlib import contextmanager
 import os
@@ -9,6 +8,9 @@ _IS_PY2 = sys.version_info.major == 2
 
 if not _IS_PY2:
     from typing import Union
+
+
+_VERSION = "1.0.0"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
@@ -22,6 +24,11 @@ try:
 except ImportError:
     pd = None
     _HAS_PANDAS = False
+
+
+def version():
+    # type: () -> str
+    return _VERSION
 
 
 class BinReader:

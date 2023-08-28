@@ -9,17 +9,16 @@ _IS_PY2 = sys.version_info.major == 2
 if not _IS_PY2:
     from typing import Union
 
-
-_VERSION = "1.0.1"
+_VERSION = "1.0.2"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
-
 
 # Check whether pandas' dataframe is available.
 _HAS_PANDAS = False
 try:
     import pandas as pd
+
     _HAS_PANDAS = True
 except ImportError:
     pd = None
@@ -35,6 +34,7 @@ class BinReader:
     """
     SDDP binary data reader class.
     """
+
     def __init__(self):
         # block type
         self.BLOCK = 0
@@ -42,6 +42,8 @@ class BinReader:
         # stage type
         self.MONTHLY = 2
         self.WEEKLY = 1
+        # string encoding
+        self._encoding = "utf-8"
         # file references
         self.__hdr_file_path = ""
         self.__bin_file_path = ""
@@ -69,7 +71,7 @@ class BinReader:
             self.close()
 
     def open(self, file_path, **kwargs):
-        # type: (str, **bool) -> None
+        # type: (str, dict) -> None
         """
         Open a HDR and a BIN file for reading, given one of them or an 
         extensionless file path. The BIN file stays open.
@@ -86,6 +88,8 @@ class BinReader:
         self.__hdr_file_path = base_path + ".hdr"
         self.__bin_file_path = base_path + ".bin"
         self.name = os.path.basename(base_path)
+
+        self._encoding = kwargs.get('encoding', 'utf-8')
 
         # check file existence
         if not os.path.exists(self.__hdr_file_path):
@@ -136,7 +140,7 @@ class BinReader:
             # type: (int) -> str
             bytes_value = struct.unpack(str(length) + 's',
                                         input_stream.read(length))[0]
-            return bytes_value.decode().strip()
+            return bytes_value.decode(self._encoding).strip()
 
         # Record #1
         seek_curpos = 1  # Seek from current position flag
@@ -202,7 +206,8 @@ class BinReader:
             # discard unused bytes
             input_stream.read(_WORD)
 
-    def __check_indexes(self, stage_to_check, scenario_to_check, block_to_check=0):
+    def __check_indexes(self, stage_to_check, scenario_to_check,
+                        block_to_check=0):
         # type: (int, int, int) -> None
         stage_msg = "Stage {} out of range ({})."
         scenario_msg = "Scenario {} out of range ({})."
@@ -211,7 +216,8 @@ class BinReader:
             raise IndexError(stage_msg.format(stage_to_check, self.stages))
 
         if scenario_to_check > self.scenarios:
-            raise IndexError(scenario_msg.format(scenario_to_check, self.scenarios))
+            raise IndexError(
+                scenario_msg.format(scenario_to_check, self.scenarios))
 
         total_blocks = self.blocks(stage_to_check)
         if block_to_check > 0 and block_to_check > total_blocks:
@@ -222,8 +228,8 @@ class BinReader:
         # type: (int, int, int) -> None
         # i_scenario, i_block are 1-based indexes; i_stage is 0-based.
         index = (self.bin_offsets[i_stage] * self.scenarios \
-                + self.blocks(i_stage + 1) * (i_scenario - 1) \
-                + (i_block - 1)) * len(self.agents)
+                 + self.blocks(i_stage + 1) * (i_scenario - 1) \
+                 + (i_block - 1)) * len(self.agents)
 
         offset_from_start = index * _WORD
         seek_from_start = 0
@@ -270,7 +276,8 @@ class BinReader:
         count = blocks * agents
 
         fmt = "{}f".format(count)
-        all_values = struct.unpack(fmt, self.__bin_file_handler.read(_WORD * count))
+        all_values = struct.unpack(fmt,
+                                   self.__bin_file_handler.read(_WORD * count))
         len_per_agent = int(len(all_values) / agents)
 
         lists = []
@@ -284,7 +291,7 @@ class BinReader:
 
 @contextmanager
 def open_bin(file_path, **kwargs):
-    # type: (str, **bool) -> None
+    # type: (str, dict) -> None
     """
     Open SDDP binary files (.hdr and .bin) for reading provided a file path
     for one of them or an extensionless file path. Yields a SddpBinaryReaader
@@ -299,10 +306,10 @@ def open_bin(file_path, **kwargs):
     obj.close()
 
 
-def load_as_dataframe(file_path):
-    # type: (str) -> Union[pd.DataFrame, None]
+def load_as_dataframe(file_path, **kwargs):
+    # type: (str, dict) -> Union[pd.DataFrame, None]
     if _HAS_PANDAS:
-        with open_bin(file_path, hdr_info=False) as graf_file:
+        with open_bin(file_path, hdr_info=False, **kwargs) as graf_file:
             total_agents = len(graf_file.agents)
             row_values = [0.0] * (total_agents + 3)
             data = []

@@ -28,7 +28,7 @@ The example below shows how to load data directly into a `pandas.DataFrame` and 
 ```python
 import psr.graf
 
-df = psr.graf.load_as_dataframe("sample_data/gerter.hdr")
+df = psr.graf.load_as_dataframe("sample_data/gerter.hdr", encoding="utf-8")
 print(df.head())
 
 ```
@@ -48,7 +48,7 @@ Alternatively, `open_bin` function can be used for direct data access as shown i
 ```python
 import psr.graf
 
-with psr.graf.open_bin("sample_data/gerter.hdr") as graf_file:
+with psr.graf.open_bin("sample_data/gerter.hdr", encoding="utf-8") as graf_file:
     print("Stages:", graf_file.stages)
     print("Scenarios:", graf_file.scenarios)
     print("Agents:", graf_file.agents)
@@ -74,6 +74,8 @@ Units: GWh
 Number of blocks at stage 2: 1
 Data at stage 2, scenario 10, block 1: (7.440000057220459, 0.7440000176429749, 0.3680693209171295)
 ```
+
+Both `open_bin` and `load_as_dataframe` functions accept `encoding` parameter to specify the encoding of the strings in file. The default is `utf-8`.
 
 
 Usage Samples

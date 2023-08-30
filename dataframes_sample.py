@@ -6,7 +6,7 @@ import pandas as pd
 
 def graf_to_dataframe(graf_file_path):
     # type: (str) -> pd.DataFrame
-    with psr.graf.open_bin(graf_file_path, hdr_info=False) as graf_file:
+    with psr.graf.open_bin(graf_file_path) as graf_file:
         total_agents = len(graf_file.agents)
         total_stages = graf_file.stages
         total_scenarios = graf_file.scenarios

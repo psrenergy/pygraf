@@ -25,7 +25,7 @@ def chunkfy(data, chunk_size):
 
 def graf_to_parquet(graf_file_path, parquet_file_path):
     # type: (str, str) -> None
-    with psr.graf.open_bin(graf_file_path, hdr_info=False) as graf_file:
+    with psr.graf.open_bin(graf_file_path) as graf_file:
         # The code below specifies the table layout.
         fields = [
             pa.field('stage', pa.int64()),

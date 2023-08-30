@@ -9,7 +9,7 @@ _IS_PY2 = sys.version_info.major == 2
 if not _IS_PY2:
     from typing import Union
 
-_VERSION = "1.0.2"
+_VERSION = "1.1.0"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
@@ -50,7 +50,7 @@ class BinReader:
         self.__bin_file_handler = None
         self.name = ""
         # print hdr information
-        self.__hdr_info = False
+        self.__print_metadata = False
         # hdr file data
         self.bin_version = None
         self.initial_stage = None
@@ -73,11 +73,15 @@ class BinReader:
     def open(self, file_path, **kwargs):
         # type: (str, dict) -> None
         """
-        Open a HDR and a BIN file for reading, given one of them or an 
-        extensionless file path. The BIN file stays open.
+        Opens a single binary or HDR and BIN file pairs for reading,
+        when one of then is specified. If a file path without extension is
+        specified, tries to open a pair of .hdr and .bin file.
+        The BIN file stays open during BinReader lifetime.
 
         Keyword arguments:
-        hdr_info -- Print files metadata to stdout (Default = False).
+        print_metadata -- Print files metadata to stdout (Default = False).
+        encoding -- encoding to decode strings in binary files
+                    (Default = utf-8).
 
         Raises FileNotFoundError if one of the required files is not found.
 
@@ -106,8 +110,8 @@ class BinReader:
 
         # additional parameters
         for key, value in kwargs.items():
-            if key == "hdr_info" and value:
-                self.__hdr_info = True
+            if key == "print_metadata" and value:
+                self.__print_metadata = True
 
         # read HDR
         with open(self.__hdr_file_path, 'rb') as file:
@@ -165,8 +169,8 @@ class BinReader:
 
         self.name_length = unpack_int()
 
-        if self.__hdr_info:
-            print("HDR data:")
+        if self.__print_metadata:
+            print("HDR/BIN metadata:")
             print("  Binary file version:", self.bin_version)
             print("  First stage:", self.initial_stage)
             print("  Number of stages:", self.stages)
@@ -294,11 +298,13 @@ def open_bin(file_path, **kwargs):
     # type: (str, dict) -> None
     """
     Open SDDP binary files (.hdr and .bin) for reading provided a file path
-    for one of them or an extensionless file path. Yields a SddpBinaryReaader
-    class.
+    for one of them or an file path without extension. Yields a
+    SddpBinaryReader class.
 
     Keyword arguments:
-        hdr_info -- Print files metadata to stdout (Default = False).
+        print_metadata -- Print files metadata to stdout (Default = False).
+        encoding -- encoding to decode strings in binary files
+                    (Default = utf-8).
     """
     obj = BinReader()
     obj.open(file_path, **kwargs)
@@ -309,7 +315,7 @@ def open_bin(file_path, **kwargs):
 def load_as_dataframe(file_path, **kwargs):
     # type: (str, dict) -> Union[pd.DataFrame, None]
     if _HAS_PANDAS:
-        with open_bin(file_path, hdr_info=False, **kwargs) as graf_file:
+        with open_bin(file_path, print_metadata=False, **kwargs) as graf_file:
             total_agents = len(graf_file.agents)
             row_values = [0.0] * (total_agents + 3)
             data = []

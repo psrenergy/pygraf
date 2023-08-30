@@ -14,7 +14,7 @@ def graf_to_csv(graf_file_path, csv_file_path, **csv_kwargs):
     # type: (str, str, **str) -> None
     extra_args = {'newline': ''} if _IS_PY3 else {}
     mode = 'w' if _IS_PY3 else 'wb'
-    with psr.graf.open_bin(graf_file_path, hdr_info=False) as graf_file, \
+    with psr.graf.open_bin(graf_file_path) as graf_file, \
             open(csv_file_path, mode, **extra_args) as csv_file:
         csv_writer = csv.writer(csv_file, **csv_kwargs)
         csv_writer.writerow(['stage', 'scenario', 'block'] + graf_file.agents)

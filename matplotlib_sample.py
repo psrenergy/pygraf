@@ -14,7 +14,7 @@ if __name__ == "__main__":
     file_path can be a path without extension (hdr and bin have common base names),
     with .hdr or .bin extensions.
     kwargs:
-     - hdr_info: boolean, prints HDR description
+     - print_metadata: boolean, prints HDR description
 
     Data can be read using `class SddpBinaryReader.read(stage, scenario, block)`
     or class `SddpBinaryReader.read_blocks(stage, scenario)`.
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     print("Example using open(...), close()")
     filename1 = "sample_data/gerter.hdr"
     graf_file = psr.graf.BinReader()
-    graf_file.open(filename1, hdr_info=True)
+    graf_file.open(filename1, print_metadata=True)
 
     print("Stages:", graf_file.stages)
     print("Agents:", graf_file.agents)
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     graf_file.close()
 
     # Hourly demand data plot example
-    with psr.graf.open_bin("sample_data/demand.hdr", hdr_info=False) as graf_file:
+    with psr.graf.open_bin("sample_data/demand.hdr") as graf_file:
         print("Stages:", graf_file.stages)
         print("Scenarios:", graf_file.scenarios)
         print("Agents:", graf_file.agents)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         plt.ylabel(graf_file.units)
         plt.xlabel("Hours")
 
-    with psr.graf.open_bin("sample_data/gerter.hdr", hdr_info=False) as graf_file:
+    with psr.graf.open_bin("sample_data/gerter.hdr") as graf_file:
         print("Stages:", graf_file.stages)
         print("Scenarios:", graf_file.scenarios)
         print("Agents:", graf_file.agents)

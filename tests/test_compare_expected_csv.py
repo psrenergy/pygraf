@@ -20,20 +20,7 @@ def get_test_folder_path():
 
 def load_csv_as_dataframe(csv_file_path, **kwargs):
     # type: (str, dict) -> pd.DataFrame
-    encoding = kwargs.get('encoding', 'utf-8')
-    with open(csv_file_path, 'r', encoding=encoding) as csv_file:
-        for _ in range(3):
-            next(csv_file)
-        df = pd.read_csv(csv_file, dtype='float64')
-    column_names = [column.strip() for column in df.columns]
-    column_names[0] = 'stage'
-    column_names[1] = 'scenario'
-    column_names[2] = 'block'
-    df.columns = column_names
-    for column in df.columns:
-        if column in ('stage', 'scenario', 'block'):
-            df[column] = df[column].astype('int64')
-    return df
+    return psr.graf.load_as_dataframe(csv_file_path, **kwargs)
 
 
 def assert_df_equal(df1, df2):
@@ -42,7 +29,7 @@ def assert_df_equal(df1, df2):
 
 
 class CompareExpectedCsv(unittest.TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.sample_file_name = "coster.hdr"
         self.encoding = 'utf-8'
 
@@ -69,7 +56,7 @@ class CompareExpectedCsv(unittest.TestCase):
         return psr.graf.load_as_dataframe(self._get_sample_file_path(),
                                           encoding=self.encoding)
 
-    def test_something(self):
+    def test_compare_files(self):
         test_df = self.get_test_df()
         sample_df = self.get_sample_df()
         if _DEBUG_PRINT:
@@ -78,19 +65,19 @@ class CompareExpectedCsv(unittest.TestCase):
 
 
 class CompareCosterLatin1Csv(CompareExpectedCsv):
-    def setUp(self) -> None:
+    def setUp(self):
         self.sample_file_name = "coster_latin1.hdr"
         self.encoding = 'latin-1'
 
 
 class CompareDemandCsv(CompareExpectedCsv):
-    def setUp(self) -> None:
+    def setUp(self):
         self.sample_file_name = "demand.hdr"
         self.encoding = 'utf-8'
 
 
 class CompareSingleBinary(CompareExpectedCsv):
-    def setUp(self) -> None:
+    def setUp(self):
         self.sample_file_name = "scen_hourinflow_w.dat"
         self.encoding = 'utf-8'
 

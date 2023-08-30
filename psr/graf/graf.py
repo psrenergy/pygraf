@@ -1,4 +1,5 @@
 from __future__ import print_function
+import csv
 from contextlib import contextmanager
 import os
 import struct
@@ -9,7 +10,7 @@ _IS_PY2 = sys.version_info.major == 2
 if not _IS_PY2:
     from typing import Union
 
-_VERSION = "1.1.0"
+_VERSION = "2.0.0"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
@@ -30,10 +31,7 @@ def version():
     return _VERSION
 
 
-class BinReader:
-    """
-    SDDP binary data reader class.
-    """
+class _GrafReaderBase(object):
     BLOCK_TYPE_BLOCK = 0
     BLOCK_TYPE_HOUR = 1
     STAGE_TYPE_WEEKLY = 1
@@ -49,14 +47,9 @@ class BinReader:
         # string encoding
         self._encoding = "utf-8"
         # file references
-        self.__hdr_file_path = ""
-        self.__bin_file_path = ""
-        self.__bin_file_handler = None
-        self.__single_bin_mode = False
-        self.__bin_offset = 0
         self.name = ""
-        # print hdr information
-        self.__print_metadata = False
+        # print metadata
+        self._print_metadata = False
         # hdr file data
         self.bin_version = None
         self.initial_stage = None
@@ -64,13 +57,60 @@ class BinReader:
         self.scenarios = None
         self.varies_by_scenario = None
         self.varies_by_block = None
+        self.hour_or_block = None
         self.stage_type = None
-        self.initial_month = None
+        self.initial_stage = None
         self.initial_year = None
         self.units = None
         self.name_length = None
         self.bin_offsets = None
         self.agents = None
+
+    def open(self, file_path, **kwargs):
+        # type: (str, dict) -> None
+        pass
+
+    def close(self):
+        # type: () -> None
+        pass
+
+    def _check_indexes(self, stage_to_check, scenario_to_check,
+                        block_to_check=0):
+        # type: (int, int, int) -> None
+        if stage_to_check > self.stages:
+            raise IndexError("Stage {} out of range ({})."
+                             .format(stage_to_check, self.stages))
+
+        if scenario_to_check > self.scenarios:
+            raise IndexError("Scenario {} out of range ({})."
+                             .format(scenario_to_check, self.scenarios))
+
+        total_blocks = self.blocks(stage_to_check)
+        if block_to_check > 0 and block_to_check > total_blocks:
+            raise IndexError("Block {} out of range ({} for stage {})."
+                             .format(block_to_check, total_blocks,
+                                     stage_to_check))
+
+
+class BinReader(_GrafReaderBase):
+    """
+    SDDP binary data reader class.
+    """
+
+    def __init__(self):
+        super(BinReader, self).__init__()
+        # file references
+        self.__hdr_file_path = ""
+        self.__bin_file_path = ""
+        self.__bin_file_handler = None
+        self.__single_bin_mode = False
+        self.__bin_offset = 0
+        # print hdr information
+        self._print_metadata = False
+        # hdr file data
+        self.bin_version = None
+        self.name_length = None
+        self.bin_offsets = None
 
     def __del__(self):
         if self.__bin_file_handler is not None:
@@ -93,6 +133,9 @@ class BinReader:
 
         Non thread-safe method.
         """
+        self._encoding = kwargs.get('encoding', 'utf-8')
+        self._print_metadata = kwargs.get('print_metadata', False)
+
         # file paths
         base_path, ext = os.path.splitext(file_path)
         if ext.lower() == ".hdr" or ext.lower() == ".bin" or ext == "":
@@ -103,9 +146,7 @@ class BinReader:
             self.__single_bin_mode = True
         self.name = os.path.basename(base_path)
 
-        self._encoding = kwargs.get('encoding', 'utf-8')
-
-        # check file existence
+        # Check files existence.
         if not os.path.exists(self.__hdr_file_path):
             if not self.__single_bin_mode:
                 error_msg = "HDR file not found: {}".format(self.__hdr_file_path)
@@ -121,11 +162,6 @@ class BinReader:
                 if _IS_PY2:
                     FileNotFoundError = IOError
                 raise FileNotFoundError(error_msg)
-
-        # additional parameters
-        for key, value in kwargs.items():
-            if key == "print_metadata" and value:
-                self.__print_metadata = True
 
         if not self.__single_bin_mode:
             # read HDR
@@ -179,12 +215,12 @@ class BinReader:
         self.varies_by_block = unpack_int()
         self.hour_or_block = unpack_int()
         self.stage_type = unpack_int()
-        self.initial_month = unpack_int()
+        self.initial_stage = unpack_int()
         self.initial_year = unpack_int()
         self.units = unpack_str(7)
         self.name_length = unpack_int()
 
-        if self.__print_metadata:
+        if self._print_metadata:
             if not self.__single_bin_mode:
                 print("HDR/BIN graf metadata:")
             else:
@@ -200,7 +236,7 @@ class BinReader:
                 BinReader.BLOCK_DESCRIPTION[self.hour_or_block]))
             print("  Type of stage: {}".format(
                 BinReader.STAGE_DESCRIPTION[self.stage_type]))
-            print("  Initial month/week:", self.initial_month)
+            print("  Initial month/week:", self.initial_stage)
             print("  Initial year:", self.initial_year)
             print("  Units:", self.units)
             print("  Stored name's length:", self.name_length)
@@ -223,24 +259,6 @@ class BinReader:
             self.agents.append(unpack_str(string_length))
             # discard unused bytes
             input_stream.read(_WORD)
-
-    def __check_indexes(self, stage_to_check, scenario_to_check,
-                        block_to_check=0):
-        # type: (int, int, int) -> None
-        stage_msg = "Stage {} out of range ({})."
-        scenario_msg = "Scenario {} out of range ({})."
-        block_msg = "Block {} out of range ({} for stage {})."
-        if stage_to_check > self.stages:
-            raise IndexError(stage_msg.format(stage_to_check, self.stages))
-
-        if scenario_to_check > self.scenarios:
-            raise IndexError(
-                scenario_msg.format(scenario_to_check, self.scenarios))
-
-        total_blocks = self.blocks(stage_to_check)
-        if block_to_check > 0 and block_to_check > total_blocks:
-            raise IndexError(block_msg.format(block_to_check, total_blocks,
-                                              stage_to_check))
 
     def __seek(self, i_stage, i_scenario, i_block):
         # type: (int, int, int) -> None
@@ -268,7 +286,7 @@ class BinReader:
 
         Non thread-safe.
         """
-        self.__check_indexes(stage, scenario, block)
+        self._check_indexes(stage, scenario, block)
         istage = stage - 1
         self.__seek(istage, scenario, block)
         agents = len(self.agents)
@@ -285,7 +303,7 @@ class BinReader:
         
         Non thread-safe.
         """
-        self.__check_indexes(stage, scenario)
+        self._check_indexes(stage, scenario)
         i_stage = stage - 1
         self.__seek(i_stage, scenario, 1)
 
@@ -307,12 +325,133 @@ class BinReader:
         return lists
 
 
+class CsvReader(_GrafReaderBase):
+    def __init__(self):
+        super(CsvReader, self).__init__()
+        self.__csv_file_path = ""
+        self.__data = {}
+        self.__max_blocks_per_stage = {}
+
+    def open(self, file_path, **kwargs):
+        # type: (str, dict) -> None
+        """
+        Opens a single csv file for reading.
+        """
+        self._encoding = kwargs.get('encoding', 'utf-8')
+        self._print_metadata = kwargs.get('print_metadata', False)
+
+        self.__csv_file_path = file_path
+        self.name = os.path.basename(self.__csv_file_path)
+
+        # Check file existence.
+        if not os.path.exists(file_path):
+            error_msg = "CSV file not found: {}".format(file_path)
+            if _IS_PY2:
+                FileNotFoundError = IOError
+            raise FileNotFoundError(error_msg)
+
+        with open(self.__csv_file_path, 'r') as csv_file:
+            self._read_header(csv_file)
+            self._read_data(csv_file)
+
+    def _read_header(self, csv_file):
+        # type: (any) -> None
+        csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
+        header_line1 = next(csv_reader)
+        header_line2 = next(csv_reader)
+        next(csv_reader)
+        header_line_4 = next(csv_reader)
+
+        self.varies_by_block = int(header_line1[1]) == 1
+        self.units = header_line1[3].strip()
+        stage_type = int(header_line1[4])
+        self.initial_stage = int(header_line1[5])
+        self.initial_year = int(header_line1[6])
+        if stage_type in (self.STAGE_TYPE_WEEKLY, self.STAGE_TYPE_MONTHLY,
+                          self.STAGE_TYPE_13MONTHLY):
+            self.stage_type = stage_type
+        else:
+            raise ValueError("Invalid stage type: {}".format(stage_type))
+
+        self.varies_by_scenario = int(header_line2[1]) == 1
+        self.agents = tuple(map(lambda x: x.strip(), header_line_4[3:]))
+        self.stages = 0
+        self.scenarios = 0
+
+    def _read_data(self, csv_file):
+        # type: (any) -> None
+        csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
+        self.__data = {}
+        for line in csv_reader:
+            key = tuple(map(int, line[:3]))
+            values = tuple(map(float, line[3:]))
+            self.__data[key] = values
+            # Update limits
+            stage = key[0]
+            scenario = key[1]
+            block = key[2]
+            if stage > self.stages:
+                self.stages = stage
+            if scenario > self.scenarios:
+                self.scenarios = scenario
+            if stage not in self.__max_blocks_per_stage or \
+                    block > self.__max_blocks_per_stage[stage]:
+                self.__max_blocks_per_stage[stage] = block
+
+        if self._is_hourly_data():
+            self.hour_or_block = self.BLOCK_TYPE_HOUR
+        else:
+            self.hour_or_block = self.BLOCK_TYPE_BLOCK
+
+    def _is_hourly_data(self):
+        # type: () -> bool
+        if self.stage_type == self.STAGE_TYPE_WEEKLY:
+            max_blocks = [blocks for stage, blocks in
+                          self.__max_blocks_per_stage.items()]
+            for blocks in max_blocks:
+                if blocks != 168:
+                    return False
+            return True
+        if self.stage_type == self.STAGE_TYPE_MONTHLY:
+            for stage, blocks in self.__max_blocks_per_stage.items():
+                if stage in (1, 3, 5, 7, 8, 10, 12):
+                    if blocks != 744:
+                        return False
+                elif stage in (4, 6, 9, 11):
+                    if blocks != 720:
+                        return False
+                else:
+                    if blocks != 672:
+                        return False
+            return True
+
+        return self.stage_type == self.STAGE_TYPE_WEEKLY
+
+    def blocks(self, stage):
+        # type: (int) -> int
+        """Number of blocks for a given stage. 1-based stage."""
+        return self.__max_blocks_per_stage[stage]
+
+    def read(self, stage, scenario, block):
+        # type: (int, int, int) -> tuple
+        """
+        Read data of a given stage, scenario, and block. Returns a list with
+        values for each agent.
+
+        Raises IndexError if stage, scenario, or block is out of bounds.
+
+        Non thread-safe.
+        """
+        self._check_indexes(stage, scenario, block)
+        return self.__data[(stage, scenario, block)]
+
+
 @contextmanager
 def open_bin(file_path, **kwargs):
     # type: (str, dict) -> None
     """
     Open SDDP binary files (.hdr and .bin) for reading provided a file path
-    for one of them or an file path without extension. Yields a
+    for one of them or a file path without extension. Yields a
     SddpBinaryReader class.
 
     Keyword arguments:
@@ -326,12 +465,28 @@ def open_bin(file_path, **kwargs):
     obj.close()
 
 
+@contextmanager
+def open_csv(file_path, **kwargs):
+    # type: (str, dict) -> None
+    """
+    Open SDDP csv result files (.csv) for reading provided a file path.
+    Yields a SddpCsvReader class.
+    """
+    obj = CsvReader()
+    obj.open(file_path, **kwargs)
+    yield obj
+    obj.close()
+
+
 def load_as_dataframe(file_path, **kwargs):
     # type: (str, dict) -> Union[pd.DataFrame, None]
     if _HAS_PANDAS:
-        with open_bin(file_path, print_metadata=False, **kwargs) as graf_file:
-            total_agents = len(graf_file.agents)
-            row_values = [0.0] * (total_agents)
+        _, ext = os.path.splitext(file_path)
+        if ext.lower() == ".csv":
+            open_fn = open_csv
+        else:
+            open_fn = open_bin
+        with open_fn(file_path, **kwargs) as graf_file:
             data = []
             index_values = []
             for stage in range(1, graf_file.stages + 1):
@@ -340,9 +495,10 @@ def load_as_dataframe(file_path, **kwargs):
                     for block in range(1, total_blocks + 1):
                         data.append(graf_file.read(stage, scenario, block))
                         index_values.append((stage, scenario, block))
-            index = pd.MultiIndex.from_tuples(index_values,
-                                              names=['stage', 'scenario',
-                                                     'block'])
-            return pd.DataFrame(data, index=index, columns=graf_file.agents)
+
+        index = pd.MultiIndex.from_tuples(index_values,
+                                          names=['stage', 'scenario',
+                                                 'block'])
+        return pd.DataFrame(data, index=index, columns=graf_file.agents)
     else:
-        return None
+        raise ImportError("pandas is not available.")

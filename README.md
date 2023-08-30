@@ -53,7 +53,7 @@ with psr.graf.open_bin("sample_data/gerter.hdr", encoding="utf-8") as graf_file:
     print("Scenarios:", graf_file.scenarios)
     print("Agents:", graf_file.agents)
     print("Initial date: {:04d}/{:02d}"
-          .format(graf_file.initial_year, graf_file.initial_month))
+          .format(graf_file.initial_year, graf_file.initial_stage))
     print("Units:", graf_file.units)
     stage = 2
     scenario = 10

@@ -34,20 +34,26 @@ class BinReader:
     """
     SDDP binary data reader class.
     """
+    BLOCK_TYPE_BLOCK = 0
+    BLOCK_TYPE_HOUR = 1
+    STAGE_TYPE_WEEKLY = 1
+    STAGE_TYPE_MONTHLY = 2
+    STAGE_TYPE_13MONTHLY = 6
+    STAGE_DESCRIPTION = {STAGE_TYPE_WEEKLY: "weekly",
+                         STAGE_TYPE_MONTHLY: "monthly",
+                         STAGE_TYPE_13MONTHLY: "13 months"}
+    BLOCK_DESCRIPTION = {BLOCK_TYPE_BLOCK: "block",
+                         BLOCK_TYPE_HOUR: "hour"}
 
     def __init__(self):
-        # block type
-        self.BLOCK = 0
-        self.HOUR = 1
-        # stage type
-        self.MONTHLY = 2
-        self.WEEKLY = 1
         # string encoding
         self._encoding = "utf-8"
         # file references
         self.__hdr_file_path = ""
         self.__bin_file_path = ""
         self.__bin_file_handler = None
+        self.__single_bin_mode = False
+        self.__bin_offset = 0
         self.name = ""
         # print hdr information
         self.__print_metadata = False
@@ -88,37 +94,52 @@ class BinReader:
         Non thread-safe method.
         """
         # file paths
-        base_path = self.__remove_file_extension(file_path)
-        self.__hdr_file_path = base_path + ".hdr"
-        self.__bin_file_path = base_path + ".bin"
+        base_path, ext = os.path.splitext(file_path)
+        if ext.lower() == ".hdr" or ext.lower() == ".bin" or ext == "":
+            self.__hdr_file_path = base_path + ".hdr"
+            self.__bin_file_path = base_path + ".bin"
+        else:
+            self.__hdr_file_path = file_path
+            self.__single_bin_mode = True
         self.name = os.path.basename(base_path)
 
         self._encoding = kwargs.get('encoding', 'utf-8')
 
         # check file existence
         if not os.path.exists(self.__hdr_file_path):
-            error_msg = "HDR file not found: {}".format(self.__hdr_file_path)
+            if not self.__single_bin_mode:
+                error_msg = "HDR file not found: {}".format(self.__hdr_file_path)
+            else:
+                error_msg = "File not found: {}".format(self.__hdr_file_path)
             if _IS_PY2:
                 FileNotFoundError = IOError
             raise FileNotFoundError(error_msg)
 
-        if not os.path.exists(self.__bin_file_path):
-            error_msg = "BIN file not found: {}".format(self.__bin_file_path)
-            if _IS_PY2:
-                FileNotFoundError = IOError
-            raise FileNotFoundError(error_msg)
+        if not self.__single_bin_mode:
+            if not os.path.exists(self.__bin_file_path):
+                error_msg = "BIN file not found: {}".format(self.__bin_file_path)
+                if _IS_PY2:
+                    FileNotFoundError = IOError
+                raise FileNotFoundError(error_msg)
 
         # additional parameters
         for key, value in kwargs.items():
             if key == "print_metadata" and value:
                 self.__print_metadata = True
 
-        # read HDR
-        with open(self.__hdr_file_path, 'rb') as file:
-            self.__read_hdr(file)
+        if not self.__single_bin_mode:
+            # read HDR
+            with open(self.__hdr_file_path, 'rb') as hdr_file:
+                self.__read_hdr(hdr_file)
 
-        # read BIN and keep it open
-        self.__bin_file_handler = open(self.__bin_file_path, 'rb')
+            # read BIN and keep it open
+            self.__bin_file_handler = open(self.__bin_file_path, 'rb')
+        else:
+            # Read single binary file and keep it open.
+            data_file = open(self.__hdr_file_path, 'rb')
+            self.__read_hdr(data_file)
+            self.__bin_offset = data_file.tell()
+            self.__bin_file_handler = data_file
 
     def close(self):
         # type: () -> None
@@ -126,22 +147,18 @@ class BinReader:
         if not self.__bin_file_handler.closed:
             self.__bin_file_handler.close()
 
-    @staticmethod
-    def __remove_file_extension(file_path):
-        # type: (str) -> str
-        return os.path.splitext(file_path)[0]
-
     def __read_hdr(self, input_stream):
         # type: (any) -> None
         def unpack_int():
             # type: () -> int
-            """Unpack 4 bytes as integer from input_stream and move its position by.
+            """Unpack 4 bytes as integer from input_stream and move its
+            position by 4 bytes.
             """
             return struct.unpack('i', input_stream.read(_WORD))[0]
 
-        # Unpack variable length string
         def unpack_str(length):
             # type: (int) -> str
+            # Unpack variable length string.
             bytes_value = struct.unpack(str(length) + 's',
                                         input_stream.read(length))[0]
             return bytes_value.decode(self._encoding).strip()
@@ -164,13 +181,14 @@ class BinReader:
         self.stage_type = unpack_int()
         self.initial_month = unpack_int()
         self.initial_year = unpack_int()
-
         self.units = unpack_str(7)
-
         self.name_length = unpack_int()
 
         if self.__print_metadata:
-            print("HDR/BIN metadata:")
+            if not self.__single_bin_mode:
+                print("HDR/BIN graf metadata:")
+            else:
+                print("graf metadata:")
             print("  Binary file version:", self.bin_version)
             print("  First stage:", self.initial_stage)
             print("  Number of stages:", self.stages)
@@ -178,18 +196,14 @@ class BinReader:
             print("  Number of agents:", agents_count)
             print("  Varies per scenario:", self.varies_by_scenario)
             print("  Varies per block/hour:", self.varies_by_block)
-            if self.hour_or_block == self.BLOCK:
-                print("  Type of data: Block")
-            else:
-                print("  Type of data: Hour")
-            if self.stage_type == self.MONTHLY:
-                print("  Type of stage: Monthly")
-            else:
-                print("  Type of stage: Weekly")
+            print("  Time mapping: {}".format(
+                BinReader.BLOCK_DESCRIPTION[self.hour_or_block]))
+            print("  Type of stage: {}".format(
+                BinReader.STAGE_DESCRIPTION[self.stage_type]))
             print("  Initial month/week:", self.initial_month)
             print("  Initial year:", self.initial_year)
             print("  Units:", self.units)
-            print("  Stored name's lenght:", self.name_length)
+            print("  Stored name's length:", self.name_length)
 
         input_stream.seek(_WORD, seek_curpos)
 
@@ -231,11 +245,11 @@ class BinReader:
     def __seek(self, i_stage, i_scenario, i_block):
         # type: (int, int, int) -> None
         # i_scenario, i_block are 1-based indexes; i_stage is 0-based.
-        index = (self.bin_offsets[i_stage] * self.scenarios \
-                 + self.blocks(i_stage + 1) * (i_scenario - 1) \
+        index = (self.bin_offsets[i_stage] * self.scenarios
+                 + self.blocks(i_stage + 1) * (i_scenario - 1)
                  + (i_block - 1)) * len(self.agents)
 
-        offset_from_start = index * _WORD
+        offset_from_start = self.__bin_offset + index * _WORD
         seek_from_start = 0
         self.__bin_file_handler.seek(offset_from_start, seek_from_start)
 

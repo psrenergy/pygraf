@@ -89,5 +89,11 @@ class CompareDemandCsv(CompareExpectedCsv):
         self.encoding = 'utf-8'
 
 
+class CompareSingleBinary(CompareExpectedCsv):
+    def setUp(self) -> None:
+        self.sample_file_name = "scen_hourinflow_w.dat"
+        self.encoding = 'utf-8'
+
+
 if __name__ == '__main__':
     unittest.main()

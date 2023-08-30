@@ -331,18 +331,18 @@ def load_as_dataframe(file_path, **kwargs):
     if _HAS_PANDAS:
         with open_bin(file_path, print_metadata=False, **kwargs) as graf_file:
             total_agents = len(graf_file.agents)
-            row_values = [0.0] * (total_agents + 3)
+            row_values = [0.0] * (total_agents)
             data = []
+            index_values = []
             for stage in range(1, graf_file.stages + 1):
-                row_values[0] = stage
                 total_blocks = graf_file.blocks(stage)
                 for scenario in range(1, graf_file.scenarios + 1):
-                    row_values[1] = scenario
                     for block in range(1, total_blocks + 1):
-                        row_values[2] = block
-                        row_values[3:] = graf_file.read(stage, scenario, block)
-                        data.append(row_values[:])
-            return pd.DataFrame(data, columns=['stage', 'scenario', 'block']
-                                              + graf_file.agents)
+                        data.append(graf_file.read(stage, scenario, block))
+                        index_values.append((stage, scenario, block))
+            index = pd.MultiIndex.from_tuples(index_values,
+                                              names=['stage', 'scenario',
+                                                     'block'])
+            return pd.DataFrame(data, index=index, columns=graf_file.agents)
     else:
         return None

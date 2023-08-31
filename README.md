@@ -20,7 +20,7 @@ Or download this repository contents.
 Usage
 -----
 
-Start by importing `psr.graf` module. It's possible to read data directly using `open_bin` function or `load_as_dataframe` function if `pandas` package is available.
+Start by importing `psr.graf` module. It's possible to read data directly using `open_bin` and `open_csv` functions or `load_as_dataframe` function if `pandas` package is available.
 
 
 The example below shows how to load data directly into a `pandas.DataFrame` and prints the first 5 lines of data.
@@ -35,15 +35,16 @@ print(df.head())
 
 The output is:
 ```
-   stage  scenario  block  Thermal 1  Thermal 2  Thermal 3
-0      1         1      1   7.440000      0.744   0.368069
-1      1         2      1   6.437624      0.000   0.000000
-2      1         3      1   7.440000      0.744   0.576140
-3      1         4      1   7.440000      0.744   2.994997
-4      1         5      1   7.440000      0.744   0.916644
+                      Thermal 1  Thermal 2  Thermal 3
+stage scenario block                                 
+1     1        1       7.440000      0.744   0.368069
+               2       6.437624      0.000   0.000000
+               3       7.440000      0.744   0.576140
+               4       7.440000      0.744   2.994997
+               5       7.440000      0.744   0.916644
 ```
 
-Alternatively, `open_bin` function can be used for direct data access as shown in the example next.
+Alternatively, `open_bin` and `open_csv` functions can be used for direct data access as shown in the example next.
 
 ```python
 import psr.graf
@@ -52,30 +53,45 @@ with psr.graf.open_bin("sample_data/gerter.hdr", encoding="utf-8") as graf_file:
     print("Stages:", graf_file.stages)
     print("Scenarios:", graf_file.scenarios)
     print("Agents:", graf_file.agents)
-    print("Initial date: {:04d}/{:02d}"
-          .format(graf_file.initial_year, graf_file.initial_stage))
+    print(f"Initial date: {graf_file.initial_year:04d}/{graf_file.initial_stage:02d}")
     print("Units:", graf_file.units)
     stage = 2
+    print(f"Number of blocks at stage {stage}: {graf_file.blocks(stage)}")
     scenario = 10
-    print("Number of blocks at stage {}: {}"
-          .format(stage, graf_file.blocks(stage)))
     block = 1
-    print("Data at stage {}, scenario {}, block {}:"
-          .format(stage, scenario, block), graf_file.read(1, 1, 1))
+    print(f"Data at stage {stage}, scenario {scenario}, block {block}:",
+          graf_file.read(stage, scenario, block))
 ```
 
 The output is:
 ```
 Stages: 12
 Scenarios: 50
-Agents: ['Thermal 1', 'Thermal 2', 'Thermal 3']
+Agents: ('Thermal 1', 'Thermal 2', 'Thermal 3')
 Initial date: 2013/01
 Units: GWh
 Number of blocks at stage 2: 1
 Data at stage 2, scenario 10, block 1: (7.440000057220459, 0.7440000176429749, 0.3680693209171295)
 ```
 
-Both `open_bin` and `load_as_dataframe` functions accept `encoding` parameter to specify the encoding of the strings in file. The default is `utf-8`.
+
+File Formats
+------------
+
+There are three result files formats supported:
+
+| File Extension | Description                      |
+|:--------------:|:---------------------------------|
+| .hdr or .bin   | Binary .hdr and .bin pair        |
+| .dat (often)   | Single-binary file               |
+| .csv           | CSV file with specific structure |
+
+* `load_as_dataframe` supports all of them and will determine which reader will be used based on the file extension.
+* `open_bin` supports only .hdr/bin pairs or single-binary files.
+* `open_csv` supports only CSV.
+
+
+Both `open_bin`, `open_csv`, and `load_as_dataframe` functions accept `encoding` parameter to specify the encoding of the strings in file. The default is `utf-8`.
 
 
 Usage Samples

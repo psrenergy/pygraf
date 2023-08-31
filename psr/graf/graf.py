@@ -10,7 +10,7 @@ _IS_PY2 = sys.version_info.major == 2
 if not _IS_PY2:
     from typing import Union
 
-_VERSION = "2.0.0"
+_VERSION = "2.0.1"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4

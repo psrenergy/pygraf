@@ -543,6 +543,7 @@ def open_csv(file_path, **kwargs):
 def load_as_dataframe(file_path, **kwargs):
     # type: (str, dict) -> Union[pd.DataFrame, None]
     use_multi_index = kwargs.get('multi_index', True)
+    index_format = kwargs.get('index_format', 'default')
     if _HAS_PANDAS:
         _, ext = os.path.splitext(file_path)
         if ext.lower() == ".csv":
@@ -552,30 +553,49 @@ def load_as_dataframe(file_path, **kwargs):
         with open_fn(file_path, **kwargs) as graf_file:
             data = []
             index_values = []
+            block_or_hour = BinReader.BLOCK_DESCRIPTION[
+                graf_file.hour_or_block]
+            if index_format == 'default':
+                index_columns = ('stage', 'scenario', block_or_hour)
+
+                def get_key(stage, scenario, block):
+                    # type: (int, int, int) -> tuple
+                    return stage, scenario, block
+            elif index_format == 'period':
+                if graf_file.stage_type == _GrafReaderBase.STAGE_TYPE_MONTHLY:
+                    month_or_week = 'month'
+                    max_periods = 12
+                else:
+                    month_or_week = 'week'
+                    max_periods = 52
+                index_columns = ('year', month_or_week, 'scenario', block_or_hour)
+
+                def get_key(stage, scenario, block):
+                    # type: (int, int, int) -> tuple
+                    year = (stage + graf_file.initial_stage - 2) // max_periods + graf_file.initial_year
+                    month_or_week = (stage + graf_file.initial_stage - 2) % max_periods + 1
+                    return year, month_or_week, scenario, block
             if use_multi_index:
                 def append_row(stage, scenario, block):
                     # type: (int, int, int) -> None
                     data.append(graf_file.read(stage, scenario, block))
-                    index_values.append((stage, scenario, block))
+                    index_values.append(get_key(stage, scenario, block))
             else:
                 def append_row(stage, scenario, block):
                     # type: (int, int, int) -> None
-                    data.append((stage, scenario, block) +
+                    data.append(get_key(stage, scenario, block) +
                                 graf_file.read(stage, scenario, block))
-            for stage in range(1, graf_file._stages + 1):
+            for stage in range(1, graf_file.stages + 1):
                 total_blocks = graf_file.blocks(stage)
-                for scenario in range(1, graf_file._scenarios + 1):
+                for scenario in range(1, graf_file.scenarios + 1):
                     for block in range(1, total_blocks + 1):
                         append_row(stage, scenario, block)
-        block_or_hour = BinReader.BLOCK_DESCRIPTION[graf_file.hour_or_block]
         if use_multi_index:
             index = pd.MultiIndex.from_tuples(index_values,
-                                              names=['stage', 'scenario',
-                                                     block_or_hour])
+                                              names=index_columns)
             return pd.DataFrame(data, index=index, columns=graf_file.agents)
         else:
-            return pd.DataFrame(data, columns=('stage', 'scenario',
-                                               block_or_hour)
+            return pd.DataFrame(data, columns=index_columns
                                               + graf_file.agents)
     else:
         raise ImportError("pandas is not available.")

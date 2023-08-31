@@ -143,6 +143,23 @@ stage scenario block
 Column names: ['Thermal 1' 'Thermal 2' 'Thermal 3']
 ```
 
+### Index formats
+
+The `index_format` specifies the format of index columns of the returned `pandas.Dataframe`. It accepts the following
+values:
+
+| Index Format | Columns                                      |
+|:------------:|:---------------------------------------------|
+| `'default'`  | stage, scenario, block or hour               |
+| `'period'`   | year, month or week, scenario, block or hour |
+
+* `'default'` creates a `pandas.DataFrame` with the columns as they are stored in the original file.
+* `'period'` converts `stage` into `year`, `month` or `week` depending on the stage type of the file and the 
+   initial year and stage.
+
+```python
+
+
 
 Usage Samples
 -------------

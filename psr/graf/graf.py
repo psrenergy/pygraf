@@ -540,6 +540,7 @@ def open_csv(file_path, **kwargs):
 
 def load_as_dataframe(file_path, **kwargs):
     # type: (str, dict) -> Union[pd.DataFrame, None]
+    use_multi_index = kwargs.get('multi_index', True)
     if _HAS_PANDAS:
         _, ext = os.path.splitext(file_path)
         if ext.lower() == ".csv":
@@ -549,16 +550,29 @@ def load_as_dataframe(file_path, **kwargs):
         with open_fn(file_path, **kwargs) as graf_file:
             data = []
             index_values = []
+            if use_multi_index:
+                def append_row(stage, scenario, block):
+                    # type: (int, int, int) -> None
+                    data.append(graf_file.read(stage, scenario, block))
+                    index_values.append((stage, scenario, block))
+            else:
+                def append_row(stage, scenario, block):
+                    # type: (int, int, int) -> None
+                    data.append((stage, scenario, block) +
+                                graf_file.read(stage, scenario, block))
             for stage in range(1, graf_file._stages + 1):
                 total_blocks = graf_file.blocks(stage)
                 for scenario in range(1, graf_file._scenarios + 1):
                     for block in range(1, total_blocks + 1):
-                        data.append(graf_file.read(stage, scenario, block))
-                        index_values.append((stage, scenario, block))
+                        append_row(stage, scenario, block)
 
-        index = pd.MultiIndex.from_tuples(index_values,
-                                          names=['stage', 'scenario',
-                                                 'block'])
-        return pd.DataFrame(data, index=index, columns=graf_file._agents)
+        if use_multi_index:
+            index = pd.MultiIndex.from_tuples(index_values,
+                                              names=['stage', 'scenario',
+                                                     'block'])
+            return pd.DataFrame(data, index=index, columns=graf_file._agents)
+        else:
+            return pd.DataFrame(data, columns=('stage', 'scenario', 'block')
+                                              + graf_file._agents)
     else:
         raise ImportError("pandas is not available.")

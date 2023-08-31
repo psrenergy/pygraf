@@ -32,6 +32,7 @@ class CompareExpectedCsv(unittest.TestCase):
     def setUp(self):
         self.sample_file_name = "coster.hdr"
         self.encoding = 'utf-8'
+        self.multi_index = True
 
     def _get_sample_file_path(self):
         # type: () -> str
@@ -47,6 +48,7 @@ class CompareExpectedCsv(unittest.TestCase):
         if _DEBUG_PRINT:
             print(self._get_test_csv_file_path())
         return load_csv_as_dataframe(self._get_test_csv_file_path(),
+                                     multi_index=self.multi_index,
                                      encoding=self.encoding)
 
     def get_sample_df(self):
@@ -54,6 +56,7 @@ class CompareExpectedCsv(unittest.TestCase):
         if _DEBUG_PRINT:
             print(self._get_sample_file_path())
         return psr.graf.load_as_dataframe(self._get_sample_file_path(),
+                                          multi_index=self.multi_index,
                                           encoding=self.encoding)
 
     def test_compare_files(self):
@@ -68,18 +71,28 @@ class CompareCosterLatin1Csv(CompareExpectedCsv):
     def setUp(self):
         self.sample_file_name = "coster_latin1.hdr"
         self.encoding = 'latin-1'
+        self.multi_index = True
 
 
-class CompareDemandCsv(CompareExpectedCsv):
+class CompareDemandCsvMultiIndex(CompareExpectedCsv):
     def setUp(self):
         self.sample_file_name = "demand.hdr"
         self.encoding = 'utf-8'
+        self.multi_index = True
+
+
+class CompareDemandCsvSingleIndex(CompareExpectedCsv):
+    def setUp(self):
+        self.sample_file_name = "demand.hdr"
+        self.encoding = 'utf-8'
+        self.multi_index = False
 
 
 class CompareSingleBinary(CompareExpectedCsv):
     def setUp(self):
         self.sample_file_name = "scen_hourinflow_w.dat"
         self.encoding = 'utf-8'
+        self.multi_index = True
 
 
 if __name__ == '__main__':

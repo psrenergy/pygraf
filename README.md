@@ -83,7 +83,7 @@ There are three result files formats supported:
 | File Extension | Description                      |
 |:--------------:|:---------------------------------|
 | .hdr or .bin   | Binary .hdr and .bin pair        |
-| .dat (often)   | Single-binary file               |
+| .dat           | Single-binary file               |
 | .csv           | CSV file with specific structure |
 
 * `load_as_dataframe` supports all of them and will determine which reader will be used based on the file extension.
@@ -92,6 +92,14 @@ There are three result files formats supported:
 
 
 Both `open_bin`, `open_csv`, and `load_as_dataframe` functions accept `encoding` parameter to specify the encoding of the strings in file. The default is `utf-8`.
+
+
+Additional information
+----------------------
+
+* `load_as_dataframe` accepts an optional keyword argument `multi_index` (default `True`) to specify if the 
+returned `pandas.DataFrame` should use multi-index or not. If `False`, the returned `pandas.DataFrame` will have a
+single automatic index and the columns 'stage', 'scenario', 'block' will appear before the agents' data.
 
 
 Usage Samples
@@ -140,6 +148,7 @@ python parquet_sample.py input_file.hdr output_file.parquet
 ```
 
 Where `output_file.parquet` is optional.
+
 
 
 Issues and Support

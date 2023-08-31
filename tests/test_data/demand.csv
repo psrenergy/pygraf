@@ -1,7 +1,7 @@
 Varies per block?       ,    1,Unit    ,GWh    ,     2,     1,  2040  
 Varies per sequence?    ,    1                                        
 # of agents             ,    2                                        
-Stag,Seq.,Blck,SIN-Mexico  ,BCN                                       
+Stag,Seq.,Blck,Demand1     ,Demand2                                   
    1,   1,   1,     45.1997,      2.3466                              
    1,   1,   2,     43.6324,      2.2137                              
    1,   1,   3,     42.0145,      2.0488                              

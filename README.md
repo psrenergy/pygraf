@@ -2,7 +2,7 @@ PyGraf
 ======
 
 
-Utility module to read Sddp hdr/bin result file pairs. Some examples to convert it to popular formats are available.
+Utility module to read Sddp hdr/bin result file pairs. Some [examples](#usage-samples) to convert it to popular formats are available.
 
 
 Installing
@@ -94,12 +94,54 @@ There are three result files formats supported:
 Both `open_bin`, `open_csv`, and `load_as_dataframe` functions accept `encoding` parameter to specify the encoding of the strings in file. The default is `utf-8`.
 
 
-Additional information
-----------------------
+DataFrame options
+-----------------
 
-* `load_as_dataframe` accepts an optional keyword argument `multi_index` (default `True`) to specify if the 
+
+### MultiIndex or single index
+
+`load_as_dataframe` accepts an optional keyword argument `multi_index` (default `True`) to specify if the 
 returned `pandas.DataFrame` should use multi-index or not. If `False`, the returned `pandas.DataFrame` will have a
 single automatic index and the columns 'stage', 'scenario', 'block' will appear before the agents' data.
+
+```python
+import psr.graf
+df = psr.graf.load_as_dataframe("sample_data/gerter.hdr", multi_index=False)
+print(df.head())
+print("Column names:", df.columns.values)
+```
+
+The output is:
+```
+   stage  scenario  block  Thermal 1  Thermal 2  Thermal 3
+0      1         1      1   7.440000      0.744   0.368069
+1      1         2      1   6.437624      0.000   0.000000
+2      1         3      1   7.440000      0.744   0.576140
+3      1         4      1   7.440000      0.744   2.994997
+4      1         5      1   7.440000      0.744   0.916644
+Column names: ['stage' 'scenario' 'block' 'Thermal 1' 'Thermal 2' 'Thermal 3']
+```
+
+On the other hand, 
+
+```python
+import psr.graf
+df = psr.graf.load_as_dataframe("sample_data/gerter.hdr", multi_index=True)
+print(df.head())
+print("Column names:", df.columns.values)
+```
+
+Will produce the following output:
+```
+                      Thermal 1  Thermal 2  Thermal 3
+stage scenario block                                 
+1     1        1       7.440000      0.744   0.368069
+      2        1       6.437624      0.000   0.000000
+      3        1       7.440000      0.744   0.576140
+      4        1       7.440000      0.744   2.994997
+      5        1       7.440000      0.744   0.916644
+Column names: ['Thermal 1' 'Thermal 2' 'Thermal 3']
+```
 
 
 Usage Samples

@@ -409,7 +409,8 @@ class CsvReader(_GrafReaderBase):
                 FileNotFoundError = IOError
             raise FileNotFoundError(error_msg)
 
-        with open(self.__csv_file_path, 'r') as csv_file:
+        with open(self.__csv_file_path, 'r',
+                  encoding=self._encoding) as csv_file:
             self._read_header(csv_file)
             self._read_data(csv_file)
 

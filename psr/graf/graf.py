@@ -208,7 +208,8 @@ class BinReader(_GrafReaderBase):
         # Check files existence.
         if not os.path.exists(self.__hdr_file_path):
             if not self.__single_bin_mode:
-                error_msg = "HDR file not found: {}".format(self.__hdr_file_path)
+                error_msg = "HDR file not found: {}".format(
+                    self.__hdr_file_path)
             else:
                 error_msg = "File not found: {}".format(self.__hdr_file_path)
             if _IS_PY2:
@@ -217,7 +218,8 @@ class BinReader(_GrafReaderBase):
 
         if not self.__single_bin_mode:
             if not os.path.exists(self.__bin_file_path):
-                error_msg = "BIN file not found: {}".format(self.__bin_file_path)
+                error_msg = "BIN file not found: {}".format(
+                    self.__bin_file_path)
                 if _IS_PY2:
                     FileNotFoundError = IOError
                 raise FileNotFoundError(error_msg)
@@ -565,14 +567,15 @@ def load_as_dataframe(file_path, **kwargs):
                 for scenario in range(1, graf_file._scenarios + 1):
                     for block in range(1, total_blocks + 1):
                         append_row(stage, scenario, block)
-
+        block_or_hour = BinReader.BLOCK_DESCRIPTION[graf_file.hour_or_block]
         if use_multi_index:
             index = pd.MultiIndex.from_tuples(index_values,
                                               names=['stage', 'scenario',
-                                                     'block'])
-            return pd.DataFrame(data, index=index, columns=graf_file._agents)
+                                                     block_or_hour])
+            return pd.DataFrame(data, index=index, columns=graf_file.agents)
         else:
-            return pd.DataFrame(data, columns=('stage', 'scenario', 'block')
-                                              + graf_file._agents)
+            return pd.DataFrame(data, columns=('stage', 'scenario',
+                                               block_or_hour)
+                                              + graf_file.agents)
     else:
         raise ImportError("pandas is not available.")

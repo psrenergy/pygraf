@@ -34,14 +34,17 @@ if __name__ == "__main__":
     stage = 1
     scenario = 1
     block = 1
-    print("Specific values (per agent):", graf_file.read(stage, scenario, block))
+    print("Specific values (per agent):", graf_file.read(stage,
+                                                         scenario, block))
     graf_file.close()
 
     # Hourly demand data plot example
     with psr.graf.open_bin("sample_data/demand.hdr") as graf_file:
-        print("Stages:", graf_file._stages)
-        print("Scenarios:", graf_file._scenarios)
-        print("Agents:", graf_file._agents)
+        print()
+        print(graf_file.name)
+        print("Stages:", graf_file.stages)
+        print("Scenarios:", graf_file.scenarios)
+        print("Agents:", graf_file.agents)
         stage = 1
         # Number of hours vary by stage on monthly studies.
         hours = list(range(1, graf_file.blocks(stage) + 1))
@@ -55,24 +58,27 @@ if __name__ == "__main__":
         agent_data_per_hour = list(map(list, zip(*hour_data_per_agent)))
 
         plt.figure()
-        plt.title("hourly {}, stage {}, scenario {}".format(graf_file._name, stage, scenario))
+        plt.title("hourly {}, stage {}, scenario {}".format(graf_file.name,
+                                                            stage, scenario))
         legend_entries = []
         for iagent, agent_hour_values in enumerate(agent_data_per_hour):
-            agent = graf_file._agents[iagent]
+            agent = graf_file.agents[iagent]
             legend_entries.append(agent)
             plt.plot(hours, agent_hour_values)
 
         plt.legend(legend_entries)
         plt.grid(True)
-        plt.ylabel(graf_file._units)
+        plt.ylabel(graf_file.units)
         plt.xlabel("Hours")
 
     with psr.graf.open_bin("sample_data/gerter.hdr") as graf_file:
-        print("Stages:", graf_file._stages)
-        print("Scenarios:", graf_file._scenarios)
-        print("Agents:", graf_file._agents)
+        print()
+        print(graf_file.name)
+        print("Stages:", graf_file.stages)
+        print("Scenarios:", graf_file.scenarios)
+        print("Agents:", graf_file.agents)
         stage_start = 1
-        stage_end = graf_file._stages
+        stage_end = graf_file.stages
         stages = list(range(stage_start, stage_end))
         scenario = 1
         block = 1
@@ -85,16 +91,17 @@ if __name__ == "__main__":
         agent_data_per_stage = list(map(list, zip(*stage_data_per_agent)))
 
         plt.figure()
-        plt.title("{}, scenario {}, block {}".format(graf_file._name, scenario, block))
+        plt.title("{}, scenario {}, block {}".format(graf_file.name,
+                                                     scenario, block))
         legend_entries = []
         for iagent, agent_stage_values in enumerate(agent_data_per_stage):
-            agent = graf_file._agents[iagent]
+            agent = graf_file.agents[iagent]
             legend_entries.append(agent)
             plt.plot(stages, agent_stage_values)
 
         plt.legend(legend_entries)
         plt.grid(True)
-        plt.ylabel(graf_file._units)
+        plt.ylabel(graf_file.units)
         plt.xlabel("Stage")
         plt.xticks(stages)
         plt.show()

@@ -33,21 +33,22 @@ def graf_to_parquet(graf_file_path, parquet_file_path):
             pa.field('block', pa.int64())
         ]
         fields.extend([pa.field(agent, pa.float32())
-                       for agent in graf_file._agents])
+                       for agent in graf_file.agents])
 
         first_chunk = True
         parquet_writer = None
         for i_chunk, stage_chunk in enumerate(
-                chunkfy(list(range(1, graf_file._stages + 1)), _stage_chunk_size)):
+                chunkfy(list(range(1, graf_file.stages + 1)),
+                        _stage_chunk_size)):
             stages = []  # Stage number column.
             scenarios = []  # Scenario number column.
             blocks = []  # Blocks number column.
             agents = []  # Stores all agents columns data.
-            for _ in graf_file._agents:
+            for _ in graf_file.agents:
                 agents.append([])
 
             for stage in stage_chunk:
-                for scenario in range(1, graf_file._scenarios + 1):
+                for scenario in range(1, graf_file.scenarios + 1):
                     data = graf_file.read_blocks(stage, scenario)
                     total_blocks = len(data[0])
                     current_blocks = list(range(1, total_blocks + 1))

@@ -10,17 +10,17 @@ import sys
 _IS_PY3 = sys.version_info.major == 3
 
 
-def graf_to_csv(graf_file_path, csv_file_path, **csv_kwargs):
+def graf_to_csv(graf_file_path, csv_path, **csv_kwargs):
     # type: (str, str, **str) -> None
     extra_args = {'newline': ''} if _IS_PY3 else {}
     mode = 'w' if _IS_PY3 else 'wb'
     with psr.graf.open_bin(graf_file_path) as graf_file, \
-            open(csv_file_path, mode, **extra_args) as csv_file:
+            open(csv_path, mode, **extra_args) as csv_file:
         csv_writer = csv.writer(csv_file, **csv_kwargs)
-        csv_writer.writerow(['stage', 'scenario', 'block'] + graf_file._agents)
-        total_agents = len(graf_file._agents)
-        total_stages = graf_file._stages
-        total_scenarios = graf_file._scenarios
+        csv_writer.writerow(('stage', 'scenario', 'block') + graf_file.agents)
+        total_agents = len(graf_file.agents)
+        total_stages = graf_file.stages
+        total_scenarios = graf_file.scenarios
         row_values = [0.0] * (total_agents + 3)
         for stage in range(1, total_stages + 1):
             row_values[0] = stage
@@ -52,11 +52,11 @@ if __name__ == "__main__":
         sddp_file = args.sddp_file
         sample_data = False
 
-    csv_file = args.csv_file if args.csv_file is not None \
+    csv_file_path = args.csv_file if args.csv_file is not None \
         else os.path.splitext(sddp_file)[0] + ".csv"
 
     if os.path.exists(sddp_file):
-        graf_to_csv(sddp_file, csv_file, delimiter=',', quotechar='"')
+        graf_to_csv(sddp_file, csv_file_path, delimiter=',', quotechar='"')
     else:
         if not sample_data:
             raise Exception("File not found: {}".format(sddp_file))

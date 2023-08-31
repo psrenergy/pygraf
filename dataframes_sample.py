@@ -7,9 +7,9 @@ import pandas as pd
 def graf_to_dataframe(graf_file_path):
     # type: (str) -> pd.DataFrame
     with psr.graf.open_bin(graf_file_path) as graf_file:
-        total_agents = len(graf_file._agents)
-        total_stages = graf_file._stages
-        total_scenarios = graf_file._scenarios
+        total_agents = len(graf_file.agents)
+        total_stages = graf_file.stages
+        total_scenarios = graf_file.scenarios
         row_values = [0.0] * (total_agents + 3)
         data = []
         for stage in range(1, total_stages + 1):
@@ -21,8 +21,9 @@ def graf_to_dataframe(graf_file_path):
                     row_values[2] = block
                     row_values[3:] = graf_file.read(stage, scenario, block)
                     data.append(row_values[:])
-        return pd.DataFrame(data, columns=['stage', 'scenario', 'block']
-                                          + graf_file._agents)
+        hour_or_block = 'hour' if graf_file.hour_or_block else 'block'
+        return pd.DataFrame(data, columns=('stage', 'scenario', hour_or_block)
+                                          + graf_file.agents)
 
 
 if __name__ == "__main__":

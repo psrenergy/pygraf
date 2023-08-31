@@ -17,10 +17,10 @@ def graf_to_csv(graf_file_path, csv_file_path, **csv_kwargs):
     with psr.graf.open_bin(graf_file_path) as graf_file, \
             open(csv_file_path, mode, **extra_args) as csv_file:
         csv_writer = csv.writer(csv_file, **csv_kwargs)
-        csv_writer.writerow(['stage', 'scenario', 'block'] + graf_file.agents)
-        total_agents = len(graf_file.agents)
-        total_stages = graf_file.stages
-        total_scenarios = graf_file.scenarios
+        csv_writer.writerow(['stage', 'scenario', 'block'] + graf_file._agents)
+        total_agents = len(graf_file._agents)
+        total_stages = graf_file._stages
+        total_scenarios = graf_file._scenarios
         row_values = [0.0] * (total_agents + 3)
         for stage in range(1, total_stages + 1):
             row_values[0] = stage

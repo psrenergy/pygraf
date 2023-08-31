@@ -2,7 +2,8 @@ PyGraf
 ======
 
 
-Utility module to read Sddp hdr/bin result file pairs. Some [examples](#usage-samples) to convert it to popular formats are available.
+Utility module to read Sddp hdr/bin result file pairs. Some [examples](#usage-samples) to convert it to 
+popular formats are available.
 
 
 Installing
@@ -20,7 +21,8 @@ Or download this repository contents.
 Usage
 -----
 
-Start by importing `psr.graf` module. It's possible to read data directly using `open_bin` and `open_csv` functions or `load_as_dataframe` function if `pandas` package is available.
+Start by importing `psr.graf` module. It's possible to read data directly using `open_bin` and `open_csv` functions 
+or `load_as_dataframe` function if `pandas` package is available.
 
 
 The example below shows how to load data directly into a `pandas.DataFrame` and prints the first 5 lines of data.
@@ -28,7 +30,7 @@ The example below shows how to load data directly into a `pandas.DataFrame` and 
 ```python
 import psr.graf
 
-df = psr.graf.load_as_dataframe("sample_data/gerter.hdr", encoding="utf-8")
+df = psr.graf.load_as_dataframe("sample_data/gerter.hdr")
 print(df.head())
 
 ```
@@ -49,7 +51,7 @@ Alternatively, `open_bin` and `open_csv` functions can be used for direct data a
 ```python
 import psr.graf
 
-with psr.graf.open_bin("sample_data/gerter.hdr", encoding="utf-8") as graf_file:
+with psr.graf.open_bin("sample_data/gerter.hdr") as graf_file:
     print("Stages:", graf_file.stages)
     print("Scenarios:", graf_file.scenarios)
     print("Agents:", graf_file.agents)
@@ -78,8 +80,6 @@ Data at stage 2, scenario 10, block 1: (7.440000057220459, 0.7440000176429749, 0
 File Formats
 ------------
 
-There are three result files formats supported:
-
 | File Extension | Description                      |
 |:--------------:|:---------------------------------|
 | .hdr or .bin   | Binary .hdr and .bin pair        |
@@ -101,9 +101,10 @@ DataFrame options
 ### MultiIndex or single index
 
 `load_as_dataframe` accepts an optional keyword argument `multi_index` (default `True`) to specify if the 
-returned `pandas.DataFrame` should use multi-index or not. If `False`, the returned `pandas.DataFrame` will have a
+returned `pandas.DataFrame` should use `pandas.MultiIndex` or not. If `False`, the returned `pandas.DataFrame` will have a
 single automatic index and the columns 'stage', 'scenario', 'block' will appear before the agents' data.
 
+Example:
 ```python
 import psr.graf
 df = psr.graf.load_as_dataframe("sample_data/gerter.hdr", multi_index=False)
@@ -150,15 +151,12 @@ values:
 
 | Index Format | Columns                                      |
 |:------------:|:---------------------------------------------|
-| `'default'`  | stage, scenario, block or hour               |
-| `'period'`   | year, month or week, scenario, block or hour |
+|  `default`   | stage, scenario, block or hour               |
+|   `period`   | year, month or week, scenario, block or hour |
 
-* `'default'` creates a `pandas.DataFrame` with the columns as they are stored in the original file.
-* `'period'` converts `stage` into `year`, `month` or `week` depending on the stage type of the file and the 
+* `default` creates a `pandas.DataFrame` with the columns as they are stored in the original file.
+* `period` converts `stage` into `year`, `month` or `week` depending on the stage type of the file and the 
    initial year and stage.
-
-```python
-
 
 
 Usage Samples

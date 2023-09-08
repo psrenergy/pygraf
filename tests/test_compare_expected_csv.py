@@ -10,7 +10,8 @@ _DEBUG_PRINT = False
 
 def get_sample_folder_path():
     # type: () -> str
-    return os.path.join(os.path.dirname(__file__), "..", "sample_data")
+    return os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                        "sample_data")
 
 
 def get_test_folder_path():
@@ -86,13 +87,6 @@ class CompareDemandCsvSingleIndex(CompareExpectedCsv):
         self.sample_file_name = "demand.hdr"
         self.encoding = 'utf-8'
         self.multi_index = False
-
-
-class CompareSingleBinary(CompareExpectedCsv):
-    def setUp(self):
-        self.sample_file_name = "scen_hourinflow_w.dat"
-        self.encoding = 'utf-8'
-        self.multi_index = True
 
 
 if __name__ == '__main__':

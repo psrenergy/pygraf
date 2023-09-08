@@ -7,9 +7,6 @@ import sys
 
 _IS_PY2 = sys.version_info.major == 2
 
-if not _IS_PY2:
-    from typing import Union
-    from builtins import FileNotFoundError
 
 _VERSION = "2.0.3"
 
@@ -30,6 +27,14 @@ except ImportError:
 def version():
     # type: () -> str
     return _VERSION
+
+
+class GrafError(Exception):
+    pass
+
+
+class GrafIOError(GrafError):
+    pass
 
 
 class _GrafReaderBase(object):
@@ -189,7 +194,7 @@ class BinReader(_GrafReaderBase):
         encoding -- encoding to decode strings in binary files
                     (Default = utf-8).
 
-        Raises FileNotFoundError if one of the required files is not found.
+        Raises GrafIOError if one of the required files is not found.
 
         Non thread-safe method.
         """
@@ -213,17 +218,13 @@ class BinReader(_GrafReaderBase):
                     self.__hdr_file_path)
             else:
                 error_msg = "File not found: {}".format(self.__hdr_file_path)
-            if _IS_PY2:
-                FileNotFoundError = IOError
-            raise FileNotFoundError(error_msg)
+            raise GrafIOError(error_msg)
 
         if not self.__single_bin_mode:
             if not os.path.exists(self.__bin_file_path):
                 error_msg = "BIN file not found: {}".format(
                     self.__bin_file_path)
-                if _IS_PY2:
-                    FileNotFoundError = IOError
-                raise FileNotFoundError(error_msg)
+                raise GrafIOError(error_msg)
 
         if not self.__single_bin_mode:
             # read HDR
@@ -408,9 +409,7 @@ class CsvReader(_GrafReaderBase):
         # Check file existence.
         if not os.path.exists(file_path):
             error_msg = "CSV file not found: {}".format(file_path)
-            if _IS_PY2:
-                FileNotFoundError = IOError
-            raise FileNotFoundError(error_msg)
+            raise GrafIOError(error_msg)
 
         with open(self.__csv_file_path, 'r',
                   encoding=self._encoding) as csv_file:

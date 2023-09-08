@@ -76,6 +76,12 @@ Number of blocks at stage 2: 1
 Data at stage 2, scenario 10, block 1: (7.440000057220459, 0.7440000176429749, 0.3680693209171295)
 ```
 
+Requirements
+------------
+
+* Python 2.7, 3.3 or newer.
+* (Optional) `pandas` package to use `load_as_dataframe` function.
+
 
 File Formats
 ------------

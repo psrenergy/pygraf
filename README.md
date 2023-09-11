@@ -165,6 +165,38 @@ values:
    initial year and stage.
 
 
+### Filter by stage, scenario, block and/or agent
+
+The `load_as_dataframe` function accepts the following optional keyword arguments to filter data:
+
+|      Argument      | Description                                                                   |
+|:------------------:|:------------------------------------------------------------------------------|
+|  `filter_stages`   | List of stages to be included                                                 |
+|  `filter_blocks`   | List of blocks to be included                                                 |
+| `filter_scenarios` | List of scenarios to be included                                              |
+|  `filter_agents`   | List of agents to be included. The name is case insensitive.                  |
+
+An empty list or unspecified means all stages, blocks, scenarios or agents will be included.
+
+Example:
+```python
+import psr.graf
+df = psr.graf.load_as_dataframe("sample_data/gerter.hdr", 
+                                filter_stages=[8, ], 
+                                filter_scenarios=[10, ],
+                                filter_agents=["Thermal 3", "Thermal 2"])
+print(df.head())
+```
+
+Outputs:
+```
+                      Thermal 3  Thermal 2
+stage scenario block                      
+10    8        1       9.127362        0.0
+```
+
+
+
 Usage Samples
 -------------
 

@@ -9,7 +9,7 @@ from typing import Tuple, Union
 _IS_PY2 = sys.version_info.major == 2
 
 
-_VERSION = "2.0.4"
+_VERSION = "2.0.5"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4

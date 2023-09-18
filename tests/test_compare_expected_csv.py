@@ -143,5 +143,17 @@ class CompareDemandCsvSingleIndex(CompareExpectedCsv):
         self.filter_blocks = []
 
 
+class CompareDataWithoutScenarios(CompareExpectedCsv):
+    def setUp(self):
+        self.sample_file_name = "duraci.hdr"
+        self.encoding = 'utf-8'
+        self.index_format = 'default'
+        self.multi_index = True
+        self.filter_agents = []
+        self.filter_stages = []
+        self.filter_scenarios = []
+        self.filter_blocks = []
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -9,7 +9,7 @@ from typing import Tuple, Union
 _IS_PY2 = sys.version_info.major == 2
 
 
-_VERSION = "2.0.5"
+_VERSION = "2.0.6"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
@@ -283,6 +283,9 @@ class BinReader(_GrafReaderBase):
         self._initial_year = unpack_int()
         self._units = unpack_str(7)
         self._name_length = unpack_int()
+
+        if self._varies_by_scenario == 0:
+            self._scenarios = 1
 
         if self._print_metadata:
             if not self.__single_bin_mode:

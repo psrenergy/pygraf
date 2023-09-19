@@ -38,7 +38,8 @@ def graf_to_parquet(graf_file_path, parquet_file_path):
         first_chunk = True
         parquet_writer = None
         for i_chunk, stage_chunk in enumerate(
-                chunkfy(list(range(1, graf_file.stages + 1)),
+                chunkfy(list(range(graf_file.min_stage,
+                                   graf_file.max_stage + 1)),
                         _stage_chunk_size)):
             stages = []  # Stage number column.
             scenarios = []  # Scenario number column.

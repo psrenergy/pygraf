@@ -77,14 +77,14 @@ if __name__ == "__main__":
         print("Stages:", graf_file.stages)
         print("Scenarios:", graf_file.scenarios)
         print("Agents:", graf_file.agents)
-        stage_start = 1
-        stage_end = graf_file.stages
+        stage_start = graf_file.min_stage
+        stage_end = graf_file.max_stage + 1
         stages = list(range(stage_start, stage_end))
         scenario = 1
         block = 1
 
         stage_data_per_agent = []
-        for stage in stages:
+        for stage in range(stage_start, stage_end):
             data = graf_file.read(stage, scenario, block)
             stage_data_per_agent.append(data)
         # Transpose stage_data_per_agent

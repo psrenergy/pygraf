@@ -22,7 +22,7 @@ def graf_to_csv(graf_file_path, csv_path, **csv_kwargs):
         total_stages = graf_file.stages
         total_scenarios = graf_file.scenarios
         row_values = [0.0] * (total_agents + 3)
-        for stage in range(1, total_stages + 1):
+        for stage in range(graf_file.min_stage, graf_file.max_stage + 1):
             row_values[0] = stage
             total_blocks = graf_file.blocks(stage)
             for scenario in range(1, total_scenarios + 1):

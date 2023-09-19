@@ -7,6 +7,7 @@ import psr.graf
 
 _DEBUG_PRINT = False
 
+_DEFAULT_TOLERANCE = 1e-05
 
 def get_sample_folder_path():
     # type: () -> str
@@ -29,9 +30,10 @@ def load_common_csv_as_dataframe(csv_file_path, **kwargs):
     return pd.read_csv(csv_file_path, **kwargs)
 
 
-def assert_df_equal(df1, df2):
-    # type: (pd.DataFrame, pd.DataFrame) -> None
-    pandas.testing.assert_frame_equal(df1, df2)
+def assert_df_equal(df1, df2, rtol):
+    # type: (pd.DataFrame, pd.DataFrame, float) -> None
+    # Test using a tolerance of 1e-6
+    pandas.testing.assert_frame_equal(df1, df2, rtol=rtol)
 
 
 class CompareExpectedCsv(unittest.TestCase):
@@ -44,6 +46,7 @@ class CompareExpectedCsv(unittest.TestCase):
         self.filter_stages = []
         self.filter_scenarios = []
         self.filter_blocks = []
+        self.tolerance = _DEFAULT_TOLERANCE
 
     def _get_sample_file_path(self):
         # type: () -> str
@@ -85,7 +88,7 @@ class CompareExpectedCsv(unittest.TestCase):
         sample_df = self.get_sample_df()
         if _DEBUG_PRINT:
             print(test_df.compare(sample_df))
-        assert_df_equal(test_df, sample_df)
+        assert_df_equal(test_df, sample_df, self.tolerance)
 
 
 class CompareExpectedCommonCsv(CompareExpectedCsv):
@@ -98,6 +101,7 @@ class CompareExpectedCommonCsv(CompareExpectedCsv):
         self.filter_stages = [1, 12]
         self.filter_scenarios = [1, 2, 3]
         self.filter_blocks = [1, ]
+        self.tolerance = _DEFAULT_TOLERANCE
 
     def get_test_df(self):
         # type: () -> pd.DataFrame
@@ -117,6 +121,7 @@ class CompareCosterLatin1Csv(CompareExpectedCsv):
         self.filter_stages = []
         self.filter_scenarios = []
         self.filter_blocks = []
+        self.tolerance = _DEFAULT_TOLERANCE
 
 
 class CompareDemandCsvMultiIndex(CompareExpectedCsv):
@@ -129,6 +134,7 @@ class CompareDemandCsvMultiIndex(CompareExpectedCsv):
         self.filter_stages = []
         self.filter_scenarios = []
         self.filter_blocks = []
+        self.tolerance = _DEFAULT_TOLERANCE
 
 
 class CompareDemandCsvSingleIndex(CompareExpectedCsv):
@@ -141,6 +147,7 @@ class CompareDemandCsvSingleIndex(CompareExpectedCsv):
         self.filter_stages = []
         self.filter_scenarios = []
         self.filter_blocks = []
+        self.tolerance = _DEFAULT_TOLERANCE
 
 
 class CompareDataWithoutScenarios(CompareExpectedCsv):
@@ -153,6 +160,20 @@ class CompareDataWithoutScenarios(CompareExpectedCsv):
         self.filter_stages = []
         self.filter_scenarios = []
         self.filter_blocks = []
+        self.tolerance = _DEFAULT_TOLERANCE
+
+
+class CompareDataWithNegativeStages(CompareExpectedCsv):
+    def setUp(self):
+        self.sample_file_name = "inflow"
+        self.encoding = 'utf-8'
+        self.index_format = 'default'
+        self.multi_index = True
+        self.filter_agents = []
+        self.filter_stages = []
+        self.filter_scenarios = []
+        self.filter_blocks = []
+        self.tolerance = 1e-03
 
 
 if __name__ == '__main__':

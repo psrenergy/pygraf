@@ -9,7 +9,7 @@ from typing import Tuple, Union
 _IS_PY2 = sys.version_info.major == 2
 
 
-_VERSION = "2.0.6"
+_VERSION = "2.0.7"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
@@ -56,8 +56,10 @@ class _GrafReaderBase(object):
         # file references
         self._name = ""
         # hdr file data
-        self._initial_stage = None
+        self._case_initial_stage = None
         self._stages = None
+        self._min_stage = None
+        self._max_stage = None
         self._scenarios = None
         self._varies_by_scenario = None
         self._varies_by_block = None
@@ -70,12 +72,22 @@ class _GrafReaderBase(object):
     @property
     def initial_stage(self):
         # type: () -> int
-        return self._initial_stage
+        return self._case_initial_stage
 
     @property
     def stages(self):
         # type: () -> int
         return self._stages
+
+    @property
+    def min_stage(self):
+        # type: () -> int
+        return self._min_stage
+
+    @property
+    def max_stage(self):
+        # type: () -> int
+        return self._max_stage
 
     @property
     def scenarios(self):
@@ -133,9 +145,11 @@ class _GrafReaderBase(object):
     def _check_indexes(self, stage_to_check, scenario_to_check,
                        block_to_check=0):
         # type: (int, int, int) -> None
-        if stage_to_check > self._stages:
-            raise IndexError("Stage {} out of range ({})."
-                             .format(stage_to_check, self._stages))
+        if (stage_to_check > self._max_stage or
+                stage_to_check < self._min_stage):
+            raise IndexError("Stage {} out of range ({}, {})."
+                             .format(stage_to_check, self._min_stage,
+                                     self._max_stage))
 
         if scenario_to_check > self._scenarios:
             raise IndexError("Scenario {} out of range ({})."
@@ -271,18 +285,19 @@ class BinReader(_GrafReaderBase):
 
         # Record #2
         input_stream.seek(_WORD, seek_curpos)
-        self._initial_stage = unpack_int()
-        self._stages = unpack_int()
+        self._min_stage = unpack_int()
+        self._max_stage = unpack_int()
         self._scenarios = unpack_int()
         agents_count = unpack_int()
         self._varies_by_scenario = unpack_int()
         self._varies_by_block = unpack_int()
         self._hour_or_block = unpack_int()
         self._stage_type = unpack_int()
-        self._initial_stage = unpack_int()
+        self._case_initial_stage = unpack_int()
         self._initial_year = unpack_int()
         self._units = unpack_str(7)
         self._name_length = unpack_int()
+        self._stages = self._max_stage - self._min_stage + 1
 
         if self._varies_by_scenario == 0:
             self._scenarios = 1
@@ -293,7 +308,7 @@ class BinReader(_GrafReaderBase):
             else:
                 print("graf metadata:")
             print("  Binary file version:", self._bin_version)
-            print("  First stage:", self._initial_stage)
+            print("  First stage:", self._min_stage)
             print("  Number of stages:", self._stages)
             print("  Number of scenarios:", self._scenarios)
             print("  Number of agents:", agents_count)
@@ -303,8 +318,8 @@ class BinReader(_GrafReaderBase):
                 BinReader.BLOCK_DESCRIPTION[self._hour_or_block]))
             print("  Type of stage: {}".format(
                 BinReader.STAGE_DESCRIPTION[self._stage_type]))
-            print("  Initial month/week:", self._initial_stage)
-            print("  Initial year:", self._initial_year)
+            print("  Case Initial month/week:", self._case_initial_stage)
+            print("  Case Initial year:", self._initial_year)
             print("  Units:", self._units)
             print("  Stored name's length:", self._name_length)
 
@@ -342,7 +357,10 @@ class BinReader(_GrafReaderBase):
     def blocks(self, stage):
         # type: (int) -> int
         """Number of blocks for a given stage. 1-based stage."""
-        return self._bin_offsets[stage] - self._bin_offsets[stage - 1]
+        istage = stage - self._min_stage + 1
+        if self._varies_by_block != 0:
+            return self._bin_offsets[stage] - self._bin_offsets[stage - 1]
+        return 1
 
     def read(self, stage, scenario, block):
         # type: (int, int, int) -> tuple
@@ -355,7 +373,7 @@ class BinReader(_GrafReaderBase):
         Non thread-safe.
         """
         self._check_indexes(stage, scenario, block)
-        istage = stage - 1
+        istage = stage - self._min_stage
         self.__seek(istage, scenario, block)
         agents = len(self._agents)
         fmt = str(agents) + 'f'
@@ -431,7 +449,7 @@ class CsvReader(_GrafReaderBase):
         self._varies_by_block = int(header_line1[1]) == 1
         self._units = header_line1[3].strip()
         stage_type = int(header_line1[4])
-        self._initial_stage = int(header_line1[5])
+        self._case_initial_stage = int(header_line1[5])
         self._initial_year = int(header_line1[6])
         if stage_type in (self.STAGE_TYPE_WEEKLY, self.STAGE_TYPE_MONTHLY,
                           self.STAGE_TYPE_13MONTHLY):
@@ -448,6 +466,8 @@ class CsvReader(_GrafReaderBase):
         # type: (any) -> None
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
         self.__data = {}
+        self._max_stage = 0
+        self._min_stage = 999999
         for line in csv_reader:
             key = tuple(map(int, line[:3]))
             values = tuple(map(float, line[3:]))
@@ -456,13 +476,17 @@ class CsvReader(_GrafReaderBase):
             stage = key[0]
             scenario = key[1]
             block = key[2]
-            if stage > self._stages:
-                self._stages = stage
+            if stage > self._max_stage:
+                self._max_stage = stage
+            if stage < self._min_stage:
+                self._min_stage = stage
             if scenario > self._scenarios:
                 self._scenarios = scenario
             if stage not in self.__max_blocks_per_stage or \
                     block > self.__max_blocks_per_stage[stage]:
                 self.__max_blocks_per_stage[stage] = block
+
+        self._stages = self._max_stage - self._min_stage + 1
 
         if self._is_hourly_data():
             self._hour_or_block = self.BLOCK_TYPE_HOUR
@@ -496,7 +520,10 @@ class CsvReader(_GrafReaderBase):
     def blocks(self, stage):
         # type: (int) -> int
         """Number of blocks for a given stage. 1-based stage."""
-        return self.__max_blocks_per_stage[stage]
+        istage = stage - self._min_stage + 1
+        if self._varies_by_block != 0:
+            return self.__max_blocks_per_stage[istage]
+        return 1
 
     def read(self, stage, scenario, block):
         # type: (int, int, int) -> tuple
@@ -650,7 +677,7 @@ def load_as_dataframe(file_path, **kwargs):
                             filter_agents(graf_file.read(stage, scenario,
                                                          block)))
 
-        for stage in range(1, graf_file.stages + 1):
+        for stage in range(graf_file.min_stage, graf_file.max_stage + 1):
             total_blocks = graf_file.blocks(stage)
             if test_stage(stage):
                 for scenario in range(1, graf_file.scenarios + 1):

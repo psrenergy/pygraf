@@ -9,7 +9,7 @@ from typing import Tuple, Union
 _IS_PY2 = sys.version_info.major == 2
 
 
-_VERSION = "2.0.7"
+_VERSION = "2.0.8"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
@@ -359,7 +359,7 @@ class BinReader(_GrafReaderBase):
         """Number of blocks for a given stage. 1-based stage."""
         istage = stage - self._min_stage + 1
         if self._varies_by_block != 0:
-            return self._bin_offsets[stage] - self._bin_offsets[stage - 1]
+            return self._bin_offsets[istage] - self._bin_offsets[istage - 1]
         return 1
 
     def read(self, stage, scenario, block):
@@ -591,24 +591,24 @@ def load_as_dataframe(file_path, **kwargs):
     filter_agents_set = tuple(agent.strip().lower() for agent in filter_agents)
 
     if len(filter_stages) > 0:
-        def test_stage(stage: int) -> bool:
-            return stage in filter_stages
+        def test_stage(_stage: int) -> bool:
+            return _stage in filter_stages
     else:
-        def test_stage(stage: int) -> bool:
+        def test_stage(_stage: int) -> bool:
             return True
 
     if len(filter_blocks) > 0:
-        def test_block(block: int) -> bool:
-            return block in filter_blocks
+        def test_block(_block: int) -> bool:
+            return _block in filter_blocks
     else:
-        def test_block(block: int) -> bool:
+        def test_block(_block: int) -> bool:
             return True
 
     if len(filter_scenarios) > 0:
-        def test_scenario(scenario: int) -> bool:
-            return scenario in filter_scenarios
+        def test_scenario(_scenario: int) -> bool:
+            return _scenario in filter_scenarios
     else:
-        def test_scenario(scenario: int) -> bool:
+        def test_scenario(_scenario: int) -> bool:
             return True
 
     if not _HAS_PANDAS:
@@ -628,9 +628,9 @@ def load_as_dataframe(file_path, **kwargs):
         if index_format == 'default':
             index_columns = ('stage', 'scenario', block_or_hour)
 
-            def get_key(stage, scenario, block):
+            def get_key(_stage, _scenario, _block):
                 # type: (int, int, int) -> tuple
-                return stage, scenario, block
+                return _stage, _scenario, _block
         elif index_format == 'period':
             if graf_file.stage_type == _GrafReaderBase.STAGE_TYPE_MONTHLY:
                 month_or_week = 'month'
@@ -640,11 +640,11 @@ def load_as_dataframe(file_path, **kwargs):
                 max_periods = 52
             index_columns = ('year', month_or_week, 'scenario', block_or_hour)
 
-            def get_key(stage, scenario, block):
+            def get_key(_stage, _scenario, _block):
                 # type: (int, int, int) -> tuple
-                year = (stage + graf_file.initial_stage - 2) // max_periods + graf_file.initial_year
-                month_or_week = (stage + graf_file.initial_stage - 2) % max_periods + 1
-                return year, month_or_week, scenario, block
+                year = (_stage + graf_file.initial_stage - 2) // max_periods + graf_file.initial_year
+                _month_or_week = (_stage + graf_file.initial_stage - 2) % max_periods + 1
+                return year, _month_or_week, _scenario, _block
 
         if len(filter_agents_set) == 0:
             df_agents = graf_file.agents
@@ -654,9 +654,9 @@ def load_as_dataframe(file_path, **kwargs):
                 return values
         else:
             original_agents = graf_file.agents
-            locase_agents = tuple(agent.strip().lower()
+            lower_case_agents = tuple(agent.strip().lower()
                                   for agent in original_agents)
-            agents_index = _get_agent_index_filter(locase_agents,
+            agents_index = _get_agent_index_filter(lower_case_agents,
                                                    filter_agents_set)
             df_agents = tuple(original_agents[i] for i in agents_index)
 
@@ -665,17 +665,17 @@ def load_as_dataframe(file_path, **kwargs):
                 return tuple(values[i] for i in agents_index)
 
         if use_multi_index:
-            def append_row(stage, scenario, block):
+            def append_row(_stage, _scenario, _block):
                 # type: (int, int, int) -> None
-                data.append(filter_agents(graf_file.read(stage, scenario,
-                                                         block)))
-                index_values.append(get_key(stage, scenario, block))
+                data.append(filter_agents(graf_file.read(_stage, _scenario,
+                                                         _block)))
+                index_values.append(get_key(_stage, _scenario, _block))
         else:
-            def append_row(stage, scenario, block):
+            def append_row(_stage, _scenario, _block):
                 # type: (int, int, int) -> None
-                data.append(get_key(stage, scenario, block) +
-                            filter_agents(graf_file.read(stage, scenario,
-                                                         block)))
+                data.append(get_key(_stage, _scenario, _block) +
+                            filter_agents(graf_file.read(_stage, _scenario,
+                                                         _block)))
 
         for stage in range(graf_file.min_stage, graf_file.max_stage + 1):
             total_blocks = graf_file.blocks(stage)

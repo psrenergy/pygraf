@@ -209,8 +209,6 @@ class BinReader(_GrafReaderBase):
         encoding -- encoding to decode strings in binary files
                     (Default = utf-8).
 
-        Raises GrafIOError if one of the required files is not found.
-
         Non thread-safe method.
         """
         self._encoding = kwargs.get('encoding', 'utf-8')
@@ -233,13 +231,13 @@ class BinReader(_GrafReaderBase):
                     self.__hdr_file_path)
             else:
                 error_msg = "File not found: {}".format(self.__hdr_file_path)
-            raise GrafIOError(error_msg)
+            raise FileNotFoundError(error_msg)
 
         if not self.__single_bin_mode:
             if not os.path.exists(self.__bin_file_path):
                 error_msg = "BIN file not found: {}".format(
                     self.__bin_file_path)
-                raise GrafIOError(error_msg)
+                raise FileNotFoundError(error_msg)
 
         if not self.__single_bin_mode:
             # read HDR
@@ -431,7 +429,7 @@ class CsvReader(_GrafReaderBase):
         # Check file existence.
         if not os.path.exists(file_path):
             error_msg = "CSV file not found: {}".format(file_path)
-            raise GrafIOError(error_msg)
+            raise FileNotFoundError(error_msg)
 
         with open(self.__csv_file_path, 'r',
                   encoding=self._encoding) as csv_file:

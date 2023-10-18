@@ -9,10 +9,21 @@ from typing import Tuple, Union
 _IS_PY2 = sys.version_info.major == 2
 
 
-_VERSION = "2.1.0"
+_VERSION = "3.0.0"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
+
+_FORCE_PURE_PYTHON = False
+
+# Check if c extension is available
+_HAS_GRAFC = False
+try:
+    import psr.graf._grafc as _grafc
+    _HAS_GRAFC = True
+except ImportError:
+    _grafc = None
+    _HAS_GRAFC = False
 
 # Check whether pandas' dataframe is available.
 _HAS_PANDAS = False
@@ -28,6 +39,29 @@ except ImportError:
 def version():
     # type: () -> str
     return _VERSION
+
+
+def force_pure_python(value: Union[bool, None] = None):
+    """Force usage of pure Python even if C extension is available."""
+    global _FORCE_PURE_PYTHON
+    if value is None:
+        return _FORCE_PURE_PYTHON
+    _FORCE_PURE_PYTHON = value
+
+
+def _get_same_case(original_ext: str, other_ext: str) -> str:
+    """Returns each other_ext character with the same case as
+    original_ext's."""
+    same_case = ""
+    for i in range(len(original_ext)):
+        if i < len(other_ext):
+            if original_ext[i].isupper():
+                same_case += other_ext[i].upper()
+            else:
+                same_case += other_ext[i].lower()
+        else:
+            break
+    return same_case
 
 
 class GrafError(Exception):
@@ -217,8 +251,9 @@ class BinReader(_GrafReaderBase):
         # file paths
         base_path, ext = os.path.splitext(file_path)
         if ext.lower() == ".hdr" or ext.lower() == ".bin" or ext == "":
-            self.__hdr_file_path = base_path + ".hdr"
-            self.__bin_file_path = base_path + ".bin"
+            ext = ext if len(ext) > 0 else ".hdr"
+            self.__hdr_file_path = base_path + _get_same_case(ext, ".hdr")
+            self.__bin_file_path = base_path + _get_same_case(ext, ".bin")
         else:
             self.__hdr_file_path = file_path
             self.__single_bin_mode = True
@@ -355,8 +390,8 @@ class BinReader(_GrafReaderBase):
     def blocks(self, stage):
         # type: (int) -> int
         """Number of blocks for a given stage. 1-based stage."""
-        istage = stage - self._min_stage + 1
         if self._varies_by_block != 0:
+            istage = stage - self._min_stage + 1
             return self._bin_offsets[istage] - self._bin_offsets[istage - 1]
         return 1
 
@@ -407,6 +442,70 @@ class BinReader(_GrafReaderBase):
                 values[i_value] = all_values[i_agent + i_value * agents]
             lists.append(values)
         return lists
+
+
+class CBinReader(BinReader):
+    """Sddp binary data reader class with Python C extension."""
+    def __init__(self):
+        super(BinReader, self).__init__()
+        self._ptr = _grafc.create()
+        self._hdr_values = ()
+        self._agents = ()
+
+    def __del__(self):
+        _grafc.destroy(self._ptr)
+        self._ptr = None
+
+    def open(self, file_path, **kwargs):
+        basename, ext = os.path.splitext(file_path)
+        if ext.lower() == ".hdr" or ext.lower() == ".bin" or ext == "":
+            ext = ext if len(ext) > 0 else ".hdr"
+            hdr_file_path = basename + _get_same_case(ext, ".hdr")
+            bin_file_path = basename + _get_same_case(ext, ".bin")
+        else:
+            hdr_file_path = file_path
+            bin_file_path = None
+
+        self._hdr_values = _grafc.load_header(self._ptr, hdr_file_path)
+
+        self._stages = self._hdr_values[1]
+        self._min_stage = self._hdr_values[2]
+        self._max_stage = self._hdr_values[3]
+        self._scenarios = self._hdr_values[4]
+        self._case_initial_stage = self._hdr_values[5]
+        self._varies_by_scenario = self._hdr_values[6]
+        self._varies_by_block = self._hdr_values[7]
+        self._hour_or_block = self._hdr_values[8]
+        self._stage_type = self._hdr_values[9]
+        self._initial_year = self._hdr_values[10]
+        self._units = self._hdr_values[11]
+
+        self._agents = _grafc.agents(self._ptr)
+        if bin_file_path is not None:
+            _grafc.open_bin(self._ptr, bin_file_path)
+
+    def close(self):
+        _grafc.close(self._ptr)
+
+    def blocks(self, stage: int) -> int:
+        return _grafc.blocks(self._ptr, stage)
+
+    @property
+    def agents(self) -> tuple:
+        return self._agents
+
+    def read(self, stage: int, scenario: int, block: int) -> tuple:
+        return _grafc.read(self._ptr, stage, scenario, block)
+
+    @property
+    def bin_version(self):
+        raise NotImplementedError()
+
+    @property
+    def name_length(self):
+        raise NotImplementedError()
+
+
 
 
 class CsvReader(_GrafReaderBase):
@@ -550,7 +649,10 @@ def open_bin(file_path, **kwargs):
         encoding -- encoding to decode strings in binary files
                     (Default = utf-8).
     """
-    obj = BinReader()
+    if not _HAS_GRAFC or _FORCE_PURE_PYTHON:
+        obj = BinReader()
+    else:
+        obj = CBinReader()
     obj.open(file_path, **kwargs)
     yield obj
     obj.close()

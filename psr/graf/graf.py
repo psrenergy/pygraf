@@ -4,12 +4,12 @@ from contextlib import contextmanager
 import os
 import struct
 import sys
-from typing import Tuple, Union
+
 
 _IS_PY2 = sys.version_info.major == 2
 
 
-_VERSION = "2.1.0"
+__version__ = "2.1.1"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
@@ -27,7 +27,7 @@ except ImportError:
 
 def version():
     # type: () -> str
-    return _VERSION
+    return __version__
 
 
 class GrafError(Exception):
@@ -589,24 +589,30 @@ def load_as_dataframe(file_path, **kwargs):
     filter_agents_set = tuple(agent.strip().lower() for agent in filter_agents)
 
     if len(filter_stages) > 0:
-        def test_stage(_stage: int) -> bool:
+        def test_stage(_stage):
+            # type: (int) -> bool
             return _stage in filter_stages
     else:
-        def test_stage(_stage: int) -> bool:
+        def test_stage(_stage):
+            # type: (int) -> bool
             return True
 
     if len(filter_blocks) > 0:
-        def test_block(_block: int) -> bool:
+        def test_block(_block):
+            # type: (int) -> bool
             return _block in filter_blocks
     else:
-        def test_block(_block: int) -> bool:
+        def test_block(_block):
+            # type: (int) -> bool
             return True
 
     if len(filter_scenarios) > 0:
-        def test_scenario(_scenario: int) -> bool:
+        def test_scenario(_scenario):
+            # type: (int) -> bool
             return _scenario in filter_scenarios
     else:
-        def test_scenario(_scenario: int) -> bool:
+        def test_scenario(_scenario):
+            # type: (int) -> bool
             return True
 
     if not _HAS_PANDAS:

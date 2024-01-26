@@ -1,11 +1,11 @@
 # Converts a Sddp result binary file into pandas.DataFrame.
 from __future__ import print_function
 import psr.graf
-import pandas as pd
+import pandas
 
 
 def graf_to_dataframe(graf_file_path):
-    # type: (str) -> pd.DataFrame
+    # type: (str) -> pandas.DataFrame
     with psr.graf.open_bin(graf_file_path) as graf_file:
         total_agents = len(graf_file.agents)
         total_stages = graf_file.stages
@@ -22,8 +22,8 @@ def graf_to_dataframe(graf_file_path):
                     row_values[3:] = graf_file.read(stage, scenario, block)
                     data.append(row_values[:])
         hour_or_block = 'hour' if graf_file.hour_or_block else 'block'
-        return pd.DataFrame(data, columns=('stage', 'scenario', hour_or_block)
-                                          + graf_file.agents)
+        columns = ('stage', 'scenario', hour_or_block) + graf_file.agents
+        return pandas.DataFrame(data, columns=columns)
 
 
 if __name__ == "__main__":

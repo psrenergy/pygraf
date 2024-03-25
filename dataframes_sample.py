@@ -1,4 +1,4 @@
-# Converts a Sddp result binary file into pandas.DataFrame.
+# Converts a SDDP result binary file into pandas.DataFrame.
 from __future__ import print_function
 import psr.graf
 import pandas

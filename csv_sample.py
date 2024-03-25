@@ -1,4 +1,4 @@
-# Converts a Sddp result binary file to Comma Delimited Values (CSV) file.
+# Converts a SDDP result binary file to Comma Delimited Values (CSV) file.
 from __future__ import print_function
 import psr.graf
 
@@ -37,10 +37,10 @@ if __name__ == "__main__":
     # Read file name from command line arguments
     # - or use sample data if not provided.
     parser = argparse.ArgumentParser(
-        description='Converts a Sddp result binary file to Comma '
+        description='Converts a SDDP result binary file to Comma '
                     'Delimited Values (CSV) file.')
     parser.add_argument('sddp_file', type=str, nargs='?',
-                        help='Sddp result binary file', default=None)
+                        help='SDDP result binary file', default=None)
     parser.add_argument('csv_file', type=str, nargs='?',
                         help='Output CSV file', default=None)
     args = parser.parse_args()

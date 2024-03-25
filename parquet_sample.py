@@ -1,4 +1,4 @@
-# Converts a Sddp result binary file to Apache Parquet file format.
+# Converts a SDDP result binary file to Apache Parquet file format.
 from __future__ import print_function
 import psr.graf
 
@@ -94,10 +94,10 @@ if __name__ == "__main__":
     # Read file name from command line arguments
     # - or use sample data if not provided.
     parser = argparse.ArgumentParser(
-        description='Converts a Sddp result binary file to Apache Parquet '
+        description='Converts a SDDP result binary file to Apache Parquet '
                     'file format.')
     parser.add_argument('sddp_file', type=str, nargs='?',
-                        help='Sddp result binary file', default=None)
+                        help='SDDP result binary file', default=None)
     parser.add_argument('parquet_file', type=str, nargs='?',
                         help='Output Parquet file', default=None)
     args = parser.parse_args()

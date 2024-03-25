@@ -2,7 +2,7 @@ PyGraf
 ======
 
 
-Utility module to read Sddp hdr/bin result file pairs. Some [examples](#usage-samples) to convert it to 
+Utility module to read SDDP hdr/bin result file pairs. Some [examples](#usage-samples) to convert it to 
 popular formats are available.
 
 

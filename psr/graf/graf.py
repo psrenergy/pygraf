@@ -9,7 +9,7 @@ import sys
 _IS_PY2 = sys.version_info.major == 2
 
 
-__version__ = "2.1.1"
+__version__ = "2.1.2"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4
@@ -444,7 +444,7 @@ class CsvReader(_GrafReaderBase):
         next(csv_reader)
         header_line_4 = next(csv_reader)
 
-        self._varies_by_block = int(header_line1[1]) == 1
+        self._varies_by_block = int(header_line1[1]) >= 1
         self._units = header_line1[3].strip()
         stage_type = int(header_line1[4])
         self._case_initial_stage = int(header_line1[5])

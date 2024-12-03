@@ -9,29 +9,25 @@ _DEBUG_PRINT = False
 
 _DEFAULT_TOLERANCE = 1e-05
 
-def get_sample_folder_path():
-    # type: () -> str
+
+def get_sample_folder_path() -> str:
     return os.path.join(os.path.dirname(os.path.dirname(__file__)),
                         "sample_data")
 
 
-def get_test_folder_path():
-    # type: () -> str
+def get_test_folder_path() -> str:
     return os.path.join(os.path.dirname(__file__), "test_data")
 
 
-def load_csv_as_dataframe(csv_file_path, **kwargs):
-    # type: (str, dict) -> pd.DataFrame
+def load_csv_as_dataframe(csv_file_path: str, **kwargs) -> pd.DataFrame:
     return psr.graf.load_as_dataframe(csv_file_path, **kwargs)
 
 
-def load_common_csv_as_dataframe(csv_file_path, **kwargs):
-    # type: (str, dict) -> pd.DataFrame
+def load_common_csv_as_dataframe(csv_file_path: str, **kwargs) -> pd.DataFrame:
     return pd.read_csv(csv_file_path, **kwargs)
 
 
-def assert_df_equal(df1, df2, rtol):
-    # type: (pd.DataFrame, pd.DataFrame, float) -> None
+def assert_df_equal(df1: pd.DataFrame, df2: pd.DataFrame, rtol: float):
     # Test using a tolerance of 1e-6
     pandas.testing.assert_frame_equal(df1, df2, rtol=rtol)
 
@@ -48,17 +44,14 @@ class CompareExpectedCsv(unittest.TestCase):
         self.filter_blocks = []
         self.tolerance = _DEFAULT_TOLERANCE
 
-    def _get_sample_file_path(self):
-        # type: () -> str
+    def _get_sample_file_path(self) -> str:
         return os.path.join(get_sample_folder_path(), self.sample_file_name)
 
-    def _get_test_csv_file_path(self):
-        # type: () -> str
+    def _get_test_csv_file_path(self) -> str:
         base_file_name = os.path.splitext(self.sample_file_name)[0]
         return os.path.join(get_test_folder_path(), base_file_name + ".csv")
 
-    def get_test_df(self):
-        # type: () -> pd.DataFrame
+    def get_test_df(self) -> pd.DataFrame:
         if _DEBUG_PRINT:
             print(self._get_test_csv_file_path())
         return load_csv_as_dataframe(self._get_test_csv_file_path(),
@@ -70,8 +63,7 @@ class CompareExpectedCsv(unittest.TestCase):
                                      filter_scenarios=self.filter_scenarios,
                                      filter_blocks=self.filter_blocks)
 
-    def get_sample_df(self):
-        # type: () -> pd.DataFrame
+    def get_sample_df(self) -> pd.DataFrame:
         if _DEBUG_PRINT:
             print(self._get_sample_file_path())
         return psr.graf.load_as_dataframe(self._get_sample_file_path(),
@@ -103,8 +95,7 @@ class CompareExpectedCommonCsv(CompareExpectedCsv):
         self.filter_blocks = [1, ]
         self.tolerance = _DEFAULT_TOLERANCE
 
-    def get_test_df(self):
-        # type: () -> pd.DataFrame
+    def get_test_df(self) -> pd.DataFrame:
         if _DEBUG_PRINT:
             print(self._get_test_csv_file_path())
         return load_common_csv_as_dataframe(self._get_test_csv_file_path(),

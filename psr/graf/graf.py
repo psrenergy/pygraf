@@ -1,9 +1,9 @@
-from __future__ import print_function
 import csv
 from contextlib import contextmanager
 import os
 import struct
 import sys
+from typing import Tuple, Optional
 
 
 _IS_PY2 = sys.version_info.major == 2
@@ -25,8 +25,7 @@ except ImportError:
     _HAS_PANDAS = False
 
 
-def version():
-    # type: () -> str
+def version() -> str:
     return __version__
 
 
@@ -38,7 +37,7 @@ class GrafIOError(GrafError):
     pass
 
 
-class _GrafReaderBase(object):
+class _GrafReaderBase:
     BLOCK_TYPE_BLOCK = 0
     BLOCK_TYPE_HOUR = 1
     STAGE_TYPE_WEEKLY = 1
@@ -70,81 +69,65 @@ class _GrafReaderBase(object):
         self._agents = None
 
     @property
-    def initial_stage(self):
-        # type: () -> int
+    def initial_stage(self) -> int:
         return self._case_initial_stage
 
     @property
-    def stages(self):
-        # type: () -> int
+    def stages(self) -> int:
         return self._stages
 
     @property
-    def min_stage(self):
-        # type: () -> int
+    def min_stage(self) -> int:
         return self._min_stage
 
     @property
-    def max_stage(self):
-        # type: () -> int
+    def max_stage(self) -> int:
         return self._max_stage
 
     @property
-    def scenarios(self):
-        # type: () -> int
+    def scenarios(self) -> int:
         return self._scenarios
 
     @property
-    def varies_by_scenario(self):
-        # type: () -> int
+    def varies_by_scenario(self) -> int:
         return self._varies_by_scenario
 
     @property
-    def varies_by_block(self):
-        # type: () -> int
+    def varies_by_block(self) -> int:
         return self._varies_by_block
 
     @property
-    def hour_or_block(self):
-        # type: () -> int
+    def hour_or_block(self) -> int:
         return self._hour_or_block
 
     @property
-    def stage_type(self):
-        # type: () -> int
+    def stage_type(self) -> int:
         return self._stage_type
 
     @property
-    def initial_year(self):
-        # type: () -> int
+    def initial_year(self) -> int:
         return self._initial_year
 
     @property
-    def units(self):
-        # type: () -> str
+    def units(self) -> str:
         return self._units
 
     @property
-    def agents(self):
-        # type: () -> tuple
+    def agents(self) -> tuple:
         return self._agents
 
     @property
-    def name(self):
-        # type: () -> str
+    def name(self) -> str:
         return self._name
 
-    def open(self, file_path, **kwargs):
-        # type: (str, dict) -> None
+    def open(self, file_path: str, **kwargs):
         pass
 
     def close(self):
-        # type: () -> None
         pass
 
-    def _check_indexes(self, stage_to_check, scenario_to_check,
-                       block_to_check=0):
-        # type: (int, int, int) -> None
+    def _check_indexes(self, stage_to_check: int, scenario_to_check: int,
+                       block_to_check:int = 0):
         if (stage_to_check > self._max_stage or
                 stage_to_check < self._min_stage):
             raise IndexError("Stage {} out of range ({}, {})."
@@ -160,6 +143,9 @@ class _GrafReaderBase(object):
             raise IndexError("Block {} out of range ({} for stage {})."
                              .format(block_to_check, total_blocks,
                                      stage_to_check))
+
+    def blocks(self, stage: int) -> int:
+        pass
 
 
 class BinReader(_GrafReaderBase):
@@ -187,17 +173,14 @@ class BinReader(_GrafReaderBase):
             self.close()
 
     @property
-    def bin_version(self):
-        # type: () -> int
+    def bin_version(self) -> int:
         return self._bin_version
 
     @property
-    def name_length(self):
-        # type: () -> int
+    def name_length(self) -> int:
         return self._name_length
 
-    def open(self, file_path, **kwargs):
-        # type: (str, dict) -> None
+    def open(self, file_path: str, **kwargs):
         """
         Opens a single binary or HDR and BIN file pairs for reading,
         when one of then is specified. If a file path without extension is
@@ -254,22 +237,18 @@ class BinReader(_GrafReaderBase):
             self.__bin_file_handler = data_file
 
     def close(self):
-        # type: () -> None
         """Closes the binary file for reading."""
         if not self.__bin_file_handler.closed:
             self.__bin_file_handler.close()
 
-    def __read_hdr(self, input_stream):
-        # type: (any) -> None
-        def unpack_int():
-            # type: () -> int
+    def __read_hdr(self, input_stream: any):
+        def unpack_int() -> int:
             """Unpack 4 bytes as integer from input_stream and move its
             position by 4 bytes.
             """
             return struct.unpack('i', input_stream.read(_WORD))[0]
 
-        def unpack_str(length):
-            # type: (int) -> str
+        def unpack_str(length) -> str:
             # Unpack variable length string.
             bytes_value = struct.unpack(str(length) + 's',
                                         input_stream.read(length))[0]
@@ -341,8 +320,7 @@ class BinReader(_GrafReaderBase):
             input_stream.read(_WORD)
         self._agents = tuple(_agents)
 
-    def __seek(self, i_stage, i_scenario, i_block):
-        # type: (int, int, int) -> None
+    def __seek(self, i_stage: int, i_scenario: int, i_block: int):
         # i_scenario, i_block are 1-based indexes; i_stage is 0-based.
         index = (self._bin_offsets[i_stage] * self._scenarios
                  + self.blocks(i_stage + 1) * (i_scenario - 1)
@@ -352,16 +330,14 @@ class BinReader(_GrafReaderBase):
         seek_from_start = 0
         self.__bin_file_handler.seek(offset_from_start, seek_from_start)
 
-    def blocks(self, stage):
-        # type: (int) -> int
+    def blocks(self, stage: int) -> int:
         """Number of blocks for a given stage. 1-based stage."""
         istage = stage - self._min_stage + 1
         if self._varies_by_block != 0:
             return self._bin_offsets[istage] - self._bin_offsets[istage - 1]
         return 1
 
-    def read(self, stage, scenario, block):
-        # type: (int, int, int) -> tuple
+    def read(self, stage: int, scenario: int, block: int) -> tuple:
         """
         Read data of a given stage, scenario, and block. Returns a list with
         values for each agent. 
@@ -377,8 +353,7 @@ class BinReader(_GrafReaderBase):
         fmt = str(agents) + 'f'
         return struct.unpack(fmt, self.__bin_file_handler.read(agents * _WORD))
 
-    def read_blocks(self, stage, scenario):
-        # type: (int, int) -> list
+    def read_blocks(self, stage: int, scenario: int) -> list:
         """
         Read data of a given stage and scenario. Returns a list
         containing lists with block data, for each agent.
@@ -416,8 +391,7 @@ class CsvReader(_GrafReaderBase):
         self.__data = {}
         self.__max_blocks_per_stage = {}
 
-    def open(self, file_path, **kwargs):
-        # type: (str, dict) -> None
+    def open(self, file_path: str, **kwargs):
         """
         Opens a single csv file for reading.
         """
@@ -436,8 +410,7 @@ class CsvReader(_GrafReaderBase):
             self._read_header(csv_file)
             self._read_data(csv_file)
 
-    def _read_header(self, csv_file):
-        # type: (any) -> None
+    def _read_header(self, csv_file: any):
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
         header_line1 = next(csv_reader)
         header_line2 = next(csv_reader)
@@ -460,8 +433,7 @@ class CsvReader(_GrafReaderBase):
         self._stages = 0
         self._scenarios = 0
 
-    def _read_data(self, csv_file):
-        # type: (any) -> None
+    def _read_data(self, csv_file: any):
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
         self.__data = {}
         self._max_stage = 0
@@ -491,8 +463,7 @@ class CsvReader(_GrafReaderBase):
         else:
             self._hour_or_block = self.BLOCK_TYPE_BLOCK
 
-    def _is_hourly_data(self):
-        # type: () -> bool
+    def _is_hourly_data(self) -> bool:
         if self._stage_type == self.STAGE_TYPE_WEEKLY:
             max_blocks = [blocks for stage, blocks in
                           self.__max_blocks_per_stage.items()]
@@ -515,16 +486,14 @@ class CsvReader(_GrafReaderBase):
 
         return self._stage_type == self.STAGE_TYPE_WEEKLY
 
-    def blocks(self, stage):
-        # type: (int) -> int
+    def blocks(self, stage: int) -> int:
         """Number of blocks for a given stage. 1-based stage."""
         istage = stage - self._min_stage + 1
         if self._varies_by_block != 0:
             return self.__max_blocks_per_stage[istage]
         return 1
 
-    def read(self, stage, scenario, block):
-        # type: (int, int, int) -> tuple
+    def read(self, stage: int, scenario: int, block: int) -> tuple:
         """
         Read data of a given stage, scenario, and block. Returns a list with
         values for each agent.
@@ -538,8 +507,7 @@ class CsvReader(_GrafReaderBase):
 
 
 @contextmanager
-def open_bin(file_path, **kwargs):
-    # type: (str, dict) -> None
+def open_bin(file_path: str, **kwargs):
     """
     Open SDDP binary files (.hdr and .bin) for reading provided a file path
     for one of them or a file path without extension. Yields a
@@ -557,8 +525,7 @@ def open_bin(file_path, **kwargs):
 
 
 @contextmanager
-def open_csv(file_path, **kwargs):
-    # type: (str, dict) -> None
+def open_csv(file_path: str, **kwargs):
     """
     Open SDDP csv result files (.csv) for reading provided a file path.
     Yields a SddpCsvReader class.
@@ -569,16 +536,14 @@ def open_csv(file_path, **kwargs):
     obj.close()
 
 
-def _get_agent_index_filter(agents, filter_agents):
-    # type: (Tuple[str], Tuple[str]) -> Tuple[int]
+def _get_agent_index_filter(agents: Tuple[str], filter_agents: Tuple[str]) -> Tuple[int, ...]:
     if len(filter_agents) == 0:
         return tuple(range(len(agents)))
     else:
         return tuple(agents.index(agent) for agent in filter_agents)
 
 
-def load_as_dataframe(file_path, **kwargs):
-    # type: (str, dict) -> Union[pd.DataFrame, None]
+def load_as_dataframe(file_path: str, **kwargs) -> Optional[pd.DataFrame]:
     use_multi_index = kwargs.get('multi_index', True)
     index_format = kwargs.get('index_format', 'default')
     filter_agents = kwargs.get('filter_agents', [])
@@ -589,30 +554,24 @@ def load_as_dataframe(file_path, **kwargs):
     filter_agents_set = tuple(agent.strip().lower() for agent in filter_agents)
 
     if len(filter_stages) > 0:
-        def test_stage(_stage):
-            # type: (int) -> bool
+        def test_stage(_stage: int) -> bool:
             return _stage in filter_stages
     else:
-        def test_stage(_stage):
-            # type: (int) -> bool
+        def test_stage(_stage: int) -> bool:
             return True
 
     if len(filter_blocks) > 0:
-        def test_block(_block):
-            # type: (int) -> bool
+        def test_block(_block: int) -> bool:
             return _block in filter_blocks
     else:
-        def test_block(_block):
-            # type: (int) -> bool
+        def test_block(_block: int) -> bool:
             return True
 
     if len(filter_scenarios) > 0:
-        def test_scenario(_scenario):
-            # type: (int) -> bool
+        def test_scenario(_scenario: int) -> bool:
             return _scenario in filter_scenarios
     else:
-        def test_scenario(_scenario):
-            # type: (int) -> bool
+        def test_scenario(_scenario: int) -> bool:
             return True
 
     if not _HAS_PANDAS:
@@ -632,8 +591,7 @@ def load_as_dataframe(file_path, **kwargs):
         if index_format == 'default':
             index_columns = ('stage', 'scenario', block_or_hour)
 
-            def get_key(_stage, _scenario, _block):
-                # type: (int, int, int) -> tuple
+            def get_key(_stage: int, _scenario: int, _block: int) -> Tuple[int, int, int]:
                 return _stage, _scenario, _block
         elif index_format == 'period':
             if graf_file.stage_type == _GrafReaderBase.STAGE_TYPE_MONTHLY:
@@ -644,8 +602,7 @@ def load_as_dataframe(file_path, **kwargs):
                 max_periods = 52
             index_columns = ('year', month_or_week, 'scenario', block_or_hour)
 
-            def get_key(_stage, _scenario, _block):
-                # type: (int, int, int) -> tuple
+            def get_key(_stage: int, _scenario: int, _block: int) -> Tuple[int, int, int, int]:
                 year = (_stage + graf_file.initial_stage - 2) // max_periods + graf_file.initial_year
                 _month_or_week = (_stage + graf_file.initial_stage - 2) % max_periods + 1
                 return year, _month_or_week, _scenario, _block
@@ -653,8 +610,7 @@ def load_as_dataframe(file_path, **kwargs):
         if len(filter_agents_set) == 0:
             df_agents = graf_file.agents
 
-            def filter_agents(values):
-                # type: (Tuple[float]) -> Tuple[float]
+            def filter_agents(values: Tuple[float]) -> Tuple[float]:
                 return values
         else:
             original_agents = graf_file.agents
@@ -664,19 +620,16 @@ def load_as_dataframe(file_path, **kwargs):
                                                    filter_agents_set)
             df_agents = tuple(original_agents[i] for i in agents_index)
 
-            def filter_agents(values):
-                # type: (Tuple[float]) -> Tuple[float]
+            def filter_agents(values: Tuple[float]) -> Tuple[float, ...]:
                 return tuple(values[i] for i in agents_index)
 
         if use_multi_index:
-            def append_row(_stage, _scenario, _block):
-                # type: (int, int, int) -> None
+            def append_row(_stage: int, _scenario: int, _block: int):
                 data.append(filter_agents(graf_file.read(_stage, _scenario,
                                                          _block)))
                 index_values.append(get_key(_stage, _scenario, _block))
         else:
-            def append_row(_stage, _scenario, _block):
-                # type: (int, int, int) -> None
+            def append_row(_stage: int, _scenario: int, _block: int):
                 data.append(get_key(_stage, _scenario, _block) +
                             filter_agents(graf_file.read(_stage, _scenario,
                                                          _block)))
@@ -694,5 +647,4 @@ def load_as_dataframe(file_path, **kwargs):
                                           names=index_columns)
         return pd.DataFrame(data, index=index, columns=df_agents)
     else:
-        return pd.DataFrame(data, columns=index_columns
-                                          + df_agents)
+        return pd.DataFrame(data, columns=index_columns + df_agents)

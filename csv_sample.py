@@ -1,5 +1,4 @@
 # Converts a SDDP result binary file to Comma Delimited Values (CSV) file.
-from __future__ import print_function
 import psr.graf
 
 import argparse
@@ -7,19 +6,15 @@ import csv
 import os
 import sys
 
-_IS_PY3 = sys.version_info.major == 3
 
-
-def graf_to_csv(graf_file_path, csv_path, **csv_kwargs):
-    # type: (str, str, **str) -> None
-    extra_args = {'newline': ''} if _IS_PY3 else {}
-    mode = 'w' if _IS_PY3 else 'wb'
+def graf_to_csv(graf_file_path: str, csv_path: str, **csv_kwargs):
+    extra_args = {'newline': ''}
+    mode = 'w'
     with psr.graf.open_bin(graf_file_path) as graf_file, \
             open(csv_path, mode, **extra_args) as csv_file:
         csv_writer = csv.writer(csv_file, **csv_kwargs)
         csv_writer.writerow(('stage', 'scenario', 'block') + graf_file.agents)
         total_agents = len(graf_file.agents)
-        total_stages = graf_file.stages
         total_scenarios = graf_file.scenarios
         row_values = [0.0] * (total_agents + 3)
         for stage in range(graf_file.min_stage, graf_file.max_stage + 1):

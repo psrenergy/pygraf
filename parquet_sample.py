@@ -14,8 +14,7 @@ import pyarrow.parquet as pq
 _stage_chunk_size = 10
 
 
-def chunkfy(data, chunk_size):
-    # type: (list, int) -> list
+def chunkfy(data: list, chunk_size: int) -> list:
     n = len(data)
     l = data
     k = chunk_size
@@ -23,8 +22,7 @@ def chunkfy(data, chunk_size):
               (i + 1) * (n // k) + min(i + 1, n % k)] for i in range(k)]
 
 
-def graf_to_parquet(graf_file_path, parquet_file_path):
-    # type: (str, str) -> None
+def graf_to_parquet(graf_file_path: str, parquet_file_path: str):
     with psr.graf.open_bin(graf_file_path) as graf_file:
         # The code below specifies the table layout.
         fields = [
@@ -78,8 +76,7 @@ def graf_to_parquet(graf_file_path, parquet_file_path):
         parquet_writer.close()
 
 
-def parquet_to_csv(parquet_file_path, csv_file_path):
-    # type: (str, str) -> None
+def parquet_to_csv(parquet_file_path: str, csv_file_path: str):
     df1 = pq.read_table(parquet_file_path).to_pandas()
 
     df1.to_csv(

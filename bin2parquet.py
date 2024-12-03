@@ -31,55 +31,13 @@ DEFAULT_VARS = [
 _stage_chunk_size = 10
 
 
-class MyBinReader(BinReader):    
-    """A modified version of the psr.graf.BinReader class with an alternative to
-     the read_blocks method, that avoids some expensive for loops by using numpy
-     to reshape the incoming stream into a 2D array. """
-
-    def read_blocks_as_array(self, stage:int, scenario:int) -> np.ndarray:
-        """
-        Read data of a given stage and scenario. Returns a 2D numpy array with
-        dimensions (blocks, agents).
-
-        Raises IndexError if stage or scenario is out of bounds.        
-        """
-        ## begin copy from psr.graf.BinReader.read_blocks -----------
-        self._check_indexes(stage, scenario)
-        i_stage = stage - 1
-        # self.__seek in the original (name mangling of private method)
-        self._BinReader__seek(i_stage, scenario, 1)
-
-        agents = len(self._agents)
-        blocks = self._bin_offsets[i_stage + 1] - self._bin_offsets[i_stage]
-        count = blocks * agents
-
-        fmt = "{}f".format(count)
-        all_values = struct.unpack(
-            fmt, 
-            # self.__bin_file_handler.read in the original (name mangling of private method)
-            self._BinReader__bin_file_handler.read(_WORD * count)) 
-        len_per_agent = int(len(all_values) / agents) # I cant see why this is not just blocks
-        # end copy from psr.graf.BinReader.read_blocks --------------
-
-        # leaving the original code here for reference
-        # lists = []
-        # for i_agent in range(agents):
-        #     values = [0.0] * len_per_agent
-        #     for i_value in range(len_per_agent):
-        #         values[i_value] = all_values[i_agent + i_value * agents]
-        #     lists.append(values)
-        # return lists
-
-        return np.array(all_values, dtype=np.float32).reshape((len_per_agent, agents))
-    
-
-# just a copy of psr.graf.open_bin that uses the MyBinReader class
 @contextmanager
 def my_open_bin(file_path: str, **kwargs):
-    reader = MyBinReader()
+    reader = BinReader()
     reader.open(file_path, **kwargs)
     yield reader
     reader.close()
+
 
 # copied from the parquet_example.py file from the psr.graf package
 # used to break the list of stages into chunks

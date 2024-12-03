@@ -1,5 +1,6 @@
 import csv
 from contextlib import contextmanager
+from itertools import islice
 import os
 import struct
 import sys
@@ -18,6 +19,7 @@ _WORD = 4
 _HAS_PANDAS = False
 try:
     import pandas as pd
+    import numpy as np
 
     _HAS_PANDAS = True
 except ImportError:
@@ -148,17 +150,17 @@ class _GrafReaderBase:
         pass
 
 
-class BinReader(_GrafReaderBase):
+class BaseBinReader(_GrafReaderBase):
     """
     SDDP binary data reader class.
     """
 
     def __init__(self):
-        super(BinReader, self).__init__()
+        super(BaseBinReader, self).__init__()
         # file references
         self.__hdr_file_path = ""
         self.__bin_file_path = ""
-        self.__bin_file_handler = None
+        self._bin_file_handler = None
         self.__single_bin_mode = False
         self.__bin_offset = 0
         # print hdr information
@@ -169,7 +171,7 @@ class BinReader(_GrafReaderBase):
         self._bin_offsets = None
 
     def __del__(self):
-        if self.__bin_file_handler is not None:
+        if self._bin_file_handler is not None:
             self.close()
 
     @property
@@ -228,18 +230,18 @@ class BinReader(_GrafReaderBase):
                 self.__read_hdr(hdr_file)
 
             # read BIN and keep it open
-            self.__bin_file_handler = open(self.__bin_file_path, 'rb')
+            self._bin_file_handler = open(self.__bin_file_path, 'rb')
         else:
             # Read single binary file and keep it open.
             data_file = open(self.__hdr_file_path, 'rb')
             self.__read_hdr(data_file)
             self.__bin_offset = data_file.tell()
-            self.__bin_file_handler = data_file
+            self._bin_file_handler = data_file
 
     def close(self):
         """Closes the binary file for reading."""
-        if not self.__bin_file_handler.closed:
-            self.__bin_file_handler.close()
+        if not self._bin_file_handler.closed:
+            self._bin_file_handler.close()
 
     def __read_hdr(self, input_stream: any):
         def unpack_int() -> int:
@@ -320,7 +322,7 @@ class BinReader(_GrafReaderBase):
             input_stream.read(_WORD)
         self._agents = tuple(_agents)
 
-    def __seek(self, i_stage: int, i_scenario: int, i_block: int):
+    def _seek(self, i_stage: int, i_scenario: int, i_block: int):
         # i_scenario, i_block are 1-based indexes; i_stage is 0-based.
         index = (self._bin_offsets[i_stage] * self._scenarios
                  + self.blocks(i_stage + 1) * (i_scenario - 1)
@@ -328,7 +330,7 @@ class BinReader(_GrafReaderBase):
 
         offset_from_start = self.__bin_offset + index * _WORD
         seek_from_start = 0
-        self.__bin_file_handler.seek(offset_from_start, seek_from_start)
+        self._bin_file_handler.seek(offset_from_start, seek_from_start)
 
     def blocks(self, stage: int) -> int:
         """Number of blocks for a given stage. 1-based stage."""
@@ -348,10 +350,10 @@ class BinReader(_GrafReaderBase):
         """
         self._check_indexes(stage, scenario, block)
         istage = stage - self._min_stage
-        self.__seek(istage, scenario, block)
+        self._seek(istage, scenario, block)
         agents = len(self._agents)
         fmt = str(agents) + 'f'
-        return struct.unpack(fmt, self.__bin_file_handler.read(agents * _WORD))
+        return struct.unpack(fmt, self._bin_file_handler.read(agents * _WORD))
 
     def read_blocks(self, stage: int, scenario: int) -> list:
         """
@@ -364,7 +366,7 @@ class BinReader(_GrafReaderBase):
         """
         self._check_indexes(stage, scenario)
         i_stage = stage - 1
-        self.__seek(i_stage, scenario, 1)
+        self._seek(i_stage, scenario, 1)
 
         agents = len(self._agents)
         blocks = self._bin_offsets[i_stage + 1] - self._bin_offsets[i_stage]
@@ -372,7 +374,7 @@ class BinReader(_GrafReaderBase):
 
         fmt = "{}f".format(count)
         all_values = struct.unpack(fmt,
-                                   self.__bin_file_handler.read(_WORD * count))
+                                   self._bin_file_handler.read(_WORD * count))
         len_per_agent = int(len(all_values) / agents)
 
         lists = []
@@ -382,6 +384,69 @@ class BinReader(_GrafReaderBase):
                 values[i_value] = all_values[i_agent + i_value * agents]
             lists.append(values)
         return lists
+
+    def read_blocks_as_array(self, stage: int, scenario: int) -> (
+            Tuple)[Tuple[float, ...], ...]:
+        self._check_indexes(stage, scenario)
+        i_stage = stage - 1
+        self._seek(i_stage, scenario, 1)
+
+        agents = len(self._agents)
+        blocks = self._bin_offsets[i_stage + 1] - self._bin_offsets[
+            i_stage]
+        count = blocks * agents
+
+        fmt = "{}f".format(count)
+        all_values = struct.unpack(
+            fmt,
+            self._bin_file_handler.read(_WORD * count))
+        len_per_agent = int(len(all_values) / agents)
+
+        iterator = iter(all_values)
+        return tuple(
+            tuple(islice(iterator, len_per_agent)) for _ in range(agents))
+
+
+if not _HAS_PANDAS:
+    class BinReader(BaseBinReader):
+        pass
+
+else:
+    class BinReader(BaseBinReader):
+        """
+        A modified version of the psr.graf.BinReader class with an alternative
+        to the read_blocks method, that avoids some expensive for loops by
+        using numpy to reshape the incoming stream into a 2D array.
+        """
+
+        def read_blocks_as_array(self, stage: int,
+                                 scenario: int) -> np.ndarray:
+            """
+            Read data of a given stage and scenario. Returns a 2D numpy array
+            with dimensions (blocks, agents).
+
+            Raises IndexError if stage or scenario is out of bounds.
+
+            Author: corypdavis
+            """
+            self._check_indexes(stage, scenario)
+            i_stage = stage - 1
+            self._seek(i_stage, scenario, 1)
+
+            agents = len(self._agents)
+            blocks = self._bin_offsets[i_stage + 1] - self._bin_offsets[
+                i_stage]
+            count = blocks * agents
+
+            fmt = "{}f".format(count)
+            all_values = struct.unpack(
+                fmt,
+                self._bin_file_handler.read(_WORD * count))
+            # I cant see why this is not just blocks
+            len_per_agent = int(len(all_values) / agents)
+
+            return np.array(all_values, dtype=np.float32).reshape(
+                (len_per_agent, agents))
 
 
 class CsvReader(_GrafReaderBase):

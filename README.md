@@ -79,7 +79,7 @@ Data at stage 2, scenario 10, block 1: (7.440000057220459, 0.7440000176429749, 0
 Requirements
 ------------
 
-* Python 2.7, 3.3 or newer.
+* Python 3.9 or newer.
 * (Optional) `pandas` package to use `load_as_dataframe` function.
 
 

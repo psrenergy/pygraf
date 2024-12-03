@@ -9,7 +9,7 @@ import sys
 _IS_PY2 = sys.version_info.major == 2
 
 
-__version__ = "2.1.2"
+__version__ = "2.1.3"
 
 # Number of bytes in a word (int32, float, ...)
 _WORD = 4

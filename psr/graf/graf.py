@@ -3,11 +3,7 @@ from contextlib import contextmanager
 from itertools import islice
 import os
 import struct
-import sys
 from typing import Tuple, Optional
-
-
-_IS_PY2 = sys.version_info.major == 2
 
 
 __version__ = "2.1.3"
@@ -132,19 +128,17 @@ class _GrafReaderBase:
                        block_to_check:int = 0):
         if (stage_to_check > self._max_stage or
                 stage_to_check < self._min_stage):
-            raise IndexError("Stage {} out of range ({}, {})."
-                             .format(stage_to_check, self._min_stage,
-                                     self._max_stage))
+            raise IndexError(f"Stage {stage_to_check} out of range "
+                             f"({self._min_stage}, {self._max_stage}).")
 
         if scenario_to_check > self._scenarios:
-            raise IndexError("Scenario {} out of range ({})."
-                             .format(scenario_to_check, self._scenarios))
+            raise IndexError(f"Scenario {scenario_to_check} "
+                             f"out of range ({self._scenarios}).")
 
         total_blocks = self.blocks(stage_to_check)
         if block_to_check > 0 and block_to_check > total_blocks:
-            raise IndexError("Block {} out of range ({} for stage {})."
-                             .format(block_to_check, total_blocks,
-                                     stage_to_check))
+            raise IndexError(f"Block {block_to_check} out of range "
+                             f"({total_blocks} for stage {stage_to_check}).")
 
     def blocks(self, stage: int) -> int:
         pass
@@ -212,16 +206,14 @@ class BaseBinReader(_GrafReaderBase):
         # Check files existence.
         if not os.path.exists(self.__hdr_file_path):
             if not self.__single_bin_mode:
-                error_msg = "HDR file not found: {}".format(
-                    self.__hdr_file_path)
+                error_msg = f"HDR file not found: {self.__hdr_file_path}"
             else:
-                error_msg = "File not found: {}".format(self.__hdr_file_path)
+                error_msg = f"File not found: {self.__hdr_file_path}"
             raise FileNotFoundError(error_msg)
 
         if not self.__single_bin_mode:
             if not os.path.exists(self.__bin_file_path):
-                error_msg = "BIN file not found: {}".format(
-                    self.__bin_file_path)
+                error_msg = f"BIN file not found: {self.__bin_file_path}"
                 raise FileNotFoundError(error_msg)
 
         if not self.__single_bin_mode:
@@ -293,10 +285,10 @@ class BaseBinReader(_GrafReaderBase):
             print("  Number of agents:", agents_count)
             print("  Varies per scenario:", self._varies_by_scenario)
             print("  Varies per block/hour:", self._varies_by_block)
-            print("  Time mapping: {}".format(
-                BinReader.BLOCK_DESCRIPTION[self._hour_or_block]))
-            print("  Type of stage: {}".format(
-                BinReader.STAGE_DESCRIPTION[self._stage_type]))
+            print("  Time mapping:",
+                  BinReader.BLOCK_DESCRIPTION[self._hour_or_block])
+            print("  Type of stage:",
+                  BinReader.STAGE_DESCRIPTION[self._stage_type])
             print("  Case Initial month/week:", self._case_initial_stage)
             print("  Case Initial year:", self._initial_year)
             print("  Units:", self._units)
@@ -372,8 +364,7 @@ class BaseBinReader(_GrafReaderBase):
         blocks = self._bin_offsets[i_stage + 1] - self._bin_offsets[i_stage]
         count = blocks * agents
 
-        fmt = "{}f".format(count)
-        all_values = struct.unpack(fmt,
+        all_values = struct.unpack(f"{count}f",
                                    self._bin_file_handler.read(_WORD * count))
         len_per_agent = int(len(all_values) / agents)
 
@@ -396,9 +387,7 @@ class BaseBinReader(_GrafReaderBase):
             i_stage]
         count = blocks * agents
 
-        fmt = "{}f".format(count)
-        all_values = struct.unpack(
-            fmt,
+        all_values = struct.unpack(f"{count}f",
             self._bin_file_handler.read(_WORD * count))
         len_per_agent = int(len(all_values) / agents)
 
@@ -438,9 +427,7 @@ else:
                 i_stage]
             count = blocks * agents
 
-            fmt = "{}f".format(count)
-            all_values = struct.unpack(
-                fmt,
+            all_values = struct.unpack(f"{count}f",
                 self._bin_file_handler.read(_WORD * count))
             # I cant see why this is not just blocks
             len_per_agent = int(len(all_values) / agents)
@@ -467,8 +454,7 @@ class CsvReader(_GrafReaderBase):
 
         # Check file existence.
         if not os.path.exists(file_path):
-            error_msg = "CSV file not found: {}".format(file_path)
-            raise FileNotFoundError(error_msg)
+            raise FileNotFoundError(f"CSV file not found: {file_path}")
 
         with open(self.__csv_file_path, 'r',
                   encoding=self._encoding) as csv_file:
@@ -491,7 +477,7 @@ class CsvReader(_GrafReaderBase):
                           self.STAGE_TYPE_13MONTHLY):
             self._stage_type = stage_type
         else:
-            raise ValueError("Invalid stage type: {}".format(stage_type))
+            raise ValueError(f"Invalid stage type: {stage_type}")
 
         self._varies_by_scenario = int(header_line2[1]) == 1
         self._agents = tuple(map(lambda x: x.strip(), header_line_4[3:]))

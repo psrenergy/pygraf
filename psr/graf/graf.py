@@ -1,9 +1,10 @@
 import csv
 from contextlib import contextmanager
 from itertools import islice
+import pathlib
 import os
 import struct
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 
 
 __version__ = "2.1.3"
@@ -118,7 +119,7 @@ class _GrafReaderBase:
     def name(self) -> str:
         return self._name
 
-    def open(self, file_path: str, **kwargs):
+    def open(self, file_path: Union[str, pathlib.Path], **kwargs):
         pass
 
     def close(self):
@@ -176,7 +177,7 @@ class BaseBinReader(_GrafReaderBase):
     def name_length(self) -> int:
         return self._name_length
 
-    def open(self, file_path: str, **kwargs):
+    def open(self, file_path: Union[str, pathlib.Path], **kwargs):
         """
         Opens a single binary or HDR and BIN file pairs for reading,
         when one of then is specified. If a file path without extension is
@@ -194,6 +195,7 @@ class BaseBinReader(_GrafReaderBase):
         self._print_metadata = kwargs.get('print_metadata', False)
 
         # file paths
+        file_path = str(file_path)
         base_path, ext = os.path.splitext(file_path)
         if ext.lower() == ".hdr" or ext.lower() == ".bin" or ext == "":
             self.__hdr_file_path = base_path + ".hdr"
@@ -443,12 +445,12 @@ class CsvReader(_GrafReaderBase):
         self.__data = {}
         self.__max_blocks_per_stage = {}
 
-    def open(self, file_path: str, **kwargs):
+    def open(self, file_path: Union[str, pathlib.Path], **kwargs):
         """
         Opens a single csv file for reading.
         """
         self._encoding = kwargs.get('encoding', 'utf-8')
-
+        file_path = str(file_path)
         self.__csv_file_path = file_path
         self._name = os.path.basename(self.__csv_file_path)
 
@@ -558,7 +560,7 @@ class CsvReader(_GrafReaderBase):
 
 
 @contextmanager
-def open_bin(file_path: str, **kwargs):
+def open_bin(file_path: Union[str, pathlib.Path], **kwargs):
     """
     Open SDDP binary files (.hdr and .bin) for reading provided a file path
     for one of them or a file path without extension. Yields a
@@ -576,7 +578,7 @@ def open_bin(file_path: str, **kwargs):
 
 
 @contextmanager
-def open_csv(file_path: str, **kwargs):
+def open_csv(file_path: Union[str, pathlib.Path], **kwargs):
     """
     Open SDDP csv result files (.csv) for reading provided a file path.
     Yields a SddpCsvReader class.
@@ -594,7 +596,7 @@ def _get_agent_index_filter(agents: Tuple[str], filter_agents: Tuple[str]) -> Tu
         return tuple(agents.index(agent) for agent in filter_agents)
 
 
-def load_as_dataframe(file_path: str, **kwargs) -> Optional[pd.DataFrame]:
+def load_as_dataframe(file_path: Union[str, pathlib.Path], **kwargs) -> Optional[pd.DataFrame]:
     use_multi_index = kwargs.get('multi_index', True)
     index_format = kwargs.get('index_format', 'default')
     filter_agents = kwargs.get('filter_agents', [])
@@ -628,6 +630,7 @@ def load_as_dataframe(file_path: str, **kwargs) -> Optional[pd.DataFrame]:
     if not _HAS_PANDAS:
         raise ImportError("pandas is not available.")
 
+    file_path = str(file_path)
     _, ext = os.path.splitext(file_path)
     if ext.lower() == ".csv":
         open_fn = open_csv
